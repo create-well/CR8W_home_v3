@@ -13,6 +13,7 @@ import { DecomprocessFAB } from './components/DecomprocessFAB';
 import { PlaygroundView } from './components/PlaygroundView';
 import { ToastContainer } from './components/Toast';
 import { useThemeInit } from './components/ThemeProvider';
+import { LoginGate, isAuthenticated, getStoredProfile } from './components/LoginGate';
 import {
   DEFAULT_ANNOUNCEMENTS,
   STATIONS_DEFAULT,
@@ -50,7 +51,11 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
 
     // Exchange code → access_token via server-side edge function (secret stays server-side)
     import('/utils/supabase/info').then(({ projectId, publicAnonKey }) => {
-      const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693/gcal-token-exchange`;
+      const host = window.location.hostname;
+      const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
+      const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
+        ?? (onVercelOrDomain ? '/api/server' : `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693`);
+      const serverUrl = `${apiBase}/gcal-token-exchange`;
 
       fetch(serverUrl, {
         method: 'POST',
@@ -177,14 +182,25 @@ export default function App() {
     };
   }, []);
 
+  // ── Auth gate — renders before everything else ────────────────────────────
+  const [authed, setAuthed] = useState(() => isAuthenticated());
+  const [initialProfile] = useState(() => getStoredProfile() ?? 'monny');
+
+  function handleAuthenticated(profileKey: string) {
+    setAuthed(true);
+    setChatActiveUser(profileKey === 'event-support' ? 'monny' : profileKey);
+  }
+
   const [currentView, setCurrentView] = useState<View>('hub');
   const [geyserDefaultTab, setGeyserDefaultTab] = useState<GeyserTab>('overview');
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [syncTime, setSyncTime] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('syncing');
-  const [chatActiveUser, setChatActiveUser] = useState('monny');
-  const [showWelcome, setShowWelcome] = useState(() => shouldShowOnboarding('monny'));
+  const [chatActiveUser, setChatActiveUser] = useState(
+    () => { const p = getStoredProfile(); return (p && p !== 'event-support') ? p : 'monny'; }
+  );
+  const [showWelcome, setShowWelcome] = useState(() => shouldShowOnboarding(initialProfile === 'event-support' ? 'monny' : initialProfile));
   const [showDomainBanner, setShowDomainBanner] = useState(() => {
     // Only show if NOT on the custom domain and not previously dismissed this session
     const isCustomDomain = window.location.hostname === 'createwell.monnyfest.co';
@@ -287,9 +303,9 @@ export default function App() {
       } catch (e) {
         console.error('Sync error:', e);
         if (silent) {
-          // Background poll: only surface error after 3 consecutive failures
+          // Background poll: surface error after 2 consecutive failures (~30 s)
           silentFailCount.current += 1;
-          if (silentFailCount.current >= 3) setSyncStatus('error');
+          if (silentFailCount.current >= 2) setSyncStatus('error');
         } else {
           // Foreground (initial) load failure — show error immediately
           setSyncStatus('error');
@@ -735,6 +751,11 @@ export default function App() {
     } catch (e) { console.error('Land well note error:', e); }
   }
 
+  // Show login gate until authenticated
+  if (!authed) {
+    return <LoginGate onAuthenticated={handleAuthenticated} />;
+  }
+
   return (
     <div className="cr8w-app" style={{ paddingBottom: '20px' }}>
       <TopNav currentView={currentView} onNavigate={navigate} syncStatus={syncStatus} />
@@ -780,10 +801,27 @@ export default function App() {
       {/* Sync indicator */}
       {syncStatus === 'error' && (
         <div style={{
-          background: '#D46B6B', color: '#fff', textAlign: 'center',
-          fontSize: '0.75rem', padding: '4px', fontFamily: 'var(--font-label)', letterSpacing: '0.03em'
+          background: '#7A3A28', color: '#FFDEC2', textAlign: 'center',
+          fontSize: '0.73rem', padding: '7px 12px', fontFamily: 'var(--font-label)',
+          letterSpacing: '0.02em', lineHeight: 1.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap',
         }}>
-          ⚠ Offline — changes may not sync · <button onClick={() => fetchSyncRef.current?.(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Retry</button>
+          <span>⚠ Server unreachable — the Supabase edge function may be down or paused.</span>
+          <span style={{ opacity: 0.7 }}>|</span>
+          <button
+            onClick={() => fetchSyncRef.current?.(false)}
+            style={{ background: 'rgba(255,222,194,0.2)', border: '1px solid rgba(255,222,194,0.4)', color: '#FFDEC2', cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit', borderRadius: 4, padding: '2px 8px' }}
+          >
+            Retry now
+          </button>
+          <a
+            href="https://status.supabase.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#FFDEC2', fontSize: 'inherit', fontFamily: 'inherit', opacity: 0.75 }}
+          >
+            Supabase status ↗
+          </a>
         </div>
       )}
 

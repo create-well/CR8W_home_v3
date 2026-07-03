@@ -1573,8 +1573,15 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                 };
               });
 
-            // KV calendar events (synced from shared Google Calendar)
-            const kvEvents: UpcomingEvent[] = kvCalEvents
+            // KV calendar events — deduplicate by canonical ID (strip kv- prefix)
+            const kvSeen = new Set<string>();
+            const kvCalDeduped = kvCalEvents.filter(ev => {
+              const canonical = ev.id.replace(/^kv-/, '');
+              if (kvSeen.has(canonical)) return false;
+              kvSeen.add(canonical);
+              return true;
+            });
+            const kvEvents: UpcomingEvent[] = kvCalDeduped
               .map(ev => {
                 const startDate = new Date(ev.start);
                 const dateStr = ev.start.split('T')[0] || startDate.toISOString().split('T')[0];

@@ -8,6 +8,8 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.49.8",
+    "@vercel/node": "5.1.11",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.5",

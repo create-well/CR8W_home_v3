@@ -1,15 +1,37 @@
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693`;
+// Pick API base at runtime so the same build works everywhere:
+//   • VITE_API_BASE env var  → explicit override (highest priority)
+//   • Vercel / custom domain → same-origin /api/server route
+//   • Figma Make preview     → must use absolute Supabase URL
+function resolveApiBase(): string {
+  if (import.meta.env.VITE_API_BASE) return import.meta.env.VITE_API_BASE as string;
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const onVercelOrDomain =
+    host.endsWith('.vercel.app') ||
+    host === 'createwell.monnyfest.co' ||
+    host === 'localhost' ||
+    host === '127.0.0.1';
+  if (onVercelOrDomain) return '/api/server';
+  // Figma Make preview iframe — relative URLs don't resolve here
+  return `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693`;
+}
+
+const BASE = resolveApiBase();
+
+// Auth header: required by Supabase edge function; Vercel routes ignore it.
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` };
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const maxRetries = method === 'GET' ? 2 : 0;
+  // One retry for GETs on network-level failures only; mutations fail fast.
+  const maxRetries = method === 'GET' ? 1 : 0;
+  // Shorter timeout: surface offline state in ≤8 s instead of 30 s.
+  const TIMEOUT_MS = 8_000;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const res = await fetch(`${BASE}${path}`, {
         method,
@@ -25,13 +47,11 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     } catch (e: any) {
       lastError = e;
       if (e?.name === 'AbortError') {
-        lastError = new Error(`${method} ${path} → request timed out after 30s`);
+        lastError = new Error(`${method} ${path} → timed out after ${TIMEOUT_MS / 1000}s`);
       }
-      // Only retry on network-level failures (Failed to fetch / abort), not HTTP errors
       const isNetworkError = e?.name === 'AbortError' || (e instanceof TypeError && e.message === 'Failed to fetch');
       if (attempt < maxRetries && isNetworkError) {
-        // Wait before retry: 1s, 2s
-        await new Promise(r => setTimeout(r, (attempt + 1) * 1000));
+        await new Promise(r => setTimeout(r, 2_000));
         continue;
       }
       throw lastError;

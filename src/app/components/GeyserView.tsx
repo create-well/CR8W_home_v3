@@ -214,7 +214,15 @@ export function GeyserView({
           </div>
           {(() => {
             const now = new Date(); now.setHours(0, 0, 0, 0);
-            const upcoming = kvCalEvents
+            // Deduplicate by canonical ID (strip leading 'kv-' prefix if present)
+            const seen = new Set<string>();
+            const deduped = kvCalEvents.filter(ev => {
+              const canonical = ev.id.replace(/^kv-/, '');
+              if (seen.has(canonical)) return false;
+              seen.add(canonical);
+              return true;
+            });
+            const upcoming = deduped
               .filter(ev => new Date(ev.start) >= now)
               .sort((a, b) => a.start.localeCompare(b.start))
               .slice(0, 6);
@@ -240,7 +248,7 @@ export function GeyserView({
                   const dateLabel = startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                   const timeLabel = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
                   return (
-                    <div key={ev.id} style={{
+                    <div key={ev.id.replace(/^kv-/, '')} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
                       borderRadius: 8, background: isToday ? 'rgba(var(--cr8w-primary-rgb, 123,168,157),0.08)' : 'transparent',
                       border: isToday ? '1px solid rgba(var(--cr8w-primary-rgb, 123,168,157),0.2)' : '1px solid transparent',

@@ -1,12 +1,10 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
-import { logger } from "npm:hono/logger";
-import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import * as kv from "./kv_store.tsx";
 
 const app = new Hono();
 
-app.use('*', logger(console.log));
 app.use("/*", cors({
   origin: "*",
   allowHeaders: ["Content-Type", "Authorization"],

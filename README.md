@@ -1,7 +1,7 @@
 
-  # Create Well Dashboard (v1)
+  # CR8W Dash v2
 
-  This is a code bundle for Create Well Dashboard (v1). The original project is available at https://www.figma.com/design/GlYHRxPiD8TIw5lFSu4ALe/Create-Well-Dashboard--v1-.
+  This is a code bundle for CR8W Dash v2. The original project is available at https://www.figma.com/design/GlYHRxPiD8TIw5lFSu4ALe/CR8W-Dash-v2.
 
   ## Running the code
 
