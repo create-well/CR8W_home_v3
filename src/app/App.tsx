@@ -50,7 +50,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
     localStorage.setItem('gcal_token_fresh', 'pending');
 
     // Exchange code → access_token via server-side edge function (secret stays server-side)
-    import('/utils/supabase/info').then(({ projectId, publicAnonKey }) => {
+    import('/utils/supabase/info').then(({ projectId, publishableKey, publicAnonKey }) => {
       const host = window.location.hostname;
       const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
       const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
@@ -61,7 +61,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${publishableKey || publicAnonKey}`,
         },
         body: JSON.stringify({
           code,
