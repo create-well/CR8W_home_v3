@@ -1,5 +1,6 @@
-import { projectId, publicAnonKey, publishableKey } from '/utils/supabase/info';
-const API_KEY = publishableKey || publicAnonKey;
+import { projectId, publicAnonKey } from '/utils/supabase/info';
+// Supabase publishable key — safe to embed (not a secret, designed for public clients)
+const API_KEY = 'sb_publishable_KKMWtvpxkSGaq-xmie6viQ_pRzAb_4i' || publicAnonKey;
 
 // Pick API base at runtime so the same build works everywhere:
 //   • VITE_API_BASE env var  → explicit override (highest priority)
@@ -15,7 +16,9 @@ function resolveApiBase(): string {
     host === '127.0.0.1';
   if (onVercelOrDomain) return '/api/server';
   // Figma Make preview iframe — relative URLs don't resolve here
-  return `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693`;
+  // Absolute Vercel URL — works from any origin including Figma Make preview.
+  // Override with VITE_API_BASE env var if you use a custom domain or alias.
+  return 'https://cr8w-home-v2.vercel.app/api/server';
 }
 
 const BASE = resolveApiBase();
@@ -151,8 +154,6 @@ export const setInviteCounts = (counts: Omit<InviteCounts, 'updated_at'>) => req
 // Calendar Events (synced from Google Calendar via KV)
 export const getCalendarEvents = () => req<CalendarEventKV[]>('GET', '/calendar-events');
 export const setCalendarEvents = (events: CalendarEventKV[]) => req<{ ok: boolean; count: number }>('POST', '/calendar-events', events);
-export const syncCalendarFromIcal = () => req<{ ok: boolean; count: number; events: CalendarEventKV[] }>('POST', '/calendar-ical-sync');
-export const getCalendarIcalSync = () => req<{ ok: boolean; events: CalendarEventKV[] }>('GET', '/calendar-ical-sync');
 
 // Parking Lot (quick-capture from Playground, KV-backed)
 export interface ParkingLotItem {

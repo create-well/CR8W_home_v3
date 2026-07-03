@@ -25,7 +25,16 @@ export const PERSONS: Record<string, Person> = {
       text: "Is there an invitation to respond to today? Wait for recognition before diving in. Your energy is precious — spend it where it's seen.",
       detail: 'Energy Budget: Projector energy is finite and potent. Rest isn\'t lazy — it\'s strategy.'
     }
-  }
+  },
+  omar: {
+    name: 'Omar', fullName: 'Omar', role: 'New Member · Community Energy',
+    expression: 'Fresh Perspective / Creative Collaborator', color: '#9B7FD4', emoji: '🌟', authority: 'open',
+    energyReminder: {
+      type: 'Welcome',
+      text: 'You bring fresh eyes and new energy to the space. Your perspective matters — trust your intuition.',
+      detail: 'New Member: Every contribution counts. Ask questions, explore freely, and build at your own pace.'
+    }
+  },
 };
 
 export interface Person {

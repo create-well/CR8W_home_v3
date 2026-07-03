@@ -50,18 +50,18 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
     localStorage.setItem('gcal_token_fresh', 'pending');
 
     // Exchange code → access_token via server-side edge function (secret stays server-side)
-    import('/utils/supabase/info').then(({ projectId, publishableKey, publicAnonKey }) => {
+    import('/utils/supabase/info').then(({ projectId, publicAnonKey }) => {
       const host = window.location.hostname;
       const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
       const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
-        ?? (onVercelOrDomain ? '/api/server' : `https://${projectId}.supabase.co/functions/v1/make-server-8dcd9693`);
+        ?? (onVercelOrDomain ? '/api/server' : 'https://cr8w-home-v2.vercel.app/api/server');
       const serverUrl = `${apiBase}/gcal-token-exchange`;
 
       fetch(serverUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publishableKey || publicAnonKey}`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({
           code,
@@ -301,14 +301,14 @@ export default function App() {
           setDataLoaded(true);
         }
       } catch (e) {
-        console.error('Sync error:', e);
-        if (silent) {
-          // Background poll: surface error after 2 consecutive failures (~30 s)
-          silentFailCount.current += 1;
-          if (silentFailCount.current >= 2) setSyncStatus('error');
-        } else {
-          // Foreground (initial) load failure — show error immediately
-          setSyncStatus('error');
+        const isNetworkError = e instanceof TypeError && String(e.message).includes('fetch');
+        // Only log network errors once (they're expected when server not yet deployed)
+        if (!isNetworkError || silentFailCount.current === 0) console.error('Sync error:', e);
+        silentFailCount.current += 1;
+        // Show error banner after 2 consecutive failures (≥30 s with backoff)
+        if (silentFailCount.current >= 2) setSyncStatus('error');
+        if (!silent && silentFailCount.current < 2) {
+          // First attempt failed silently — app still loads with defaults, no banner yet
         }
         if (!dataLoadedRef.current) {
           dataLoadedRef.current = true;
@@ -321,8 +321,24 @@ export default function App() {
 
     fetchSyncRef.current = fetchSync;
     fetchSync(false);
-    pollRef.current = setInterval(() => fetchSyncRef.current?.(true), 15_000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+
+    // Exponential backoff: start at 15 s, double on each consecutive network failure,
+    // cap at 5 min. Resets to 15 s on any successful sync.
+    let pollInterval = 15_000;
+    const MAX_INTERVAL = 300_000; // 5 min
+
+    function schedulePoll() {
+      pollRef.current = setTimeout(async () => {
+        await fetchSyncRef.current?.(true);
+        // After each run, compute next interval based on current fail streak
+        pollInterval = silentFailCount.current > 0
+          ? Math.min(pollInterval * 2, MAX_INTERVAL)
+          : 15_000;
+        schedulePoll();
+      }, pollInterval);
+    }
+    schedulePoll();
+    return () => { if (pollRef.current) clearTimeout(pollRef.current as any); };
   }, []); // runs once — no stale closure, dataLoadedRef is mutable
 
   // Scroll to top on view change
@@ -806,7 +822,7 @@ export default function App() {
           letterSpacing: '0.02em', lineHeight: 1.5,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap',
         }}>
-          <span>⚠ Server unreachable — the Supabase edge function may be down or paused.</span>
+          <span>⚠ API unreachable — redeploy on Vercel to activate the server, then retry.</span>
           <span style={{ opacity: 0.7 }}>|</span>
           <button
             onClick={() => fetchSyncRef.current?.(false)}
@@ -815,12 +831,12 @@ export default function App() {
             Retry now
           </button>
           <a
-            href="https://status.supabase.com"
+            href="https://vercel.com/monnylog/cr8w_home_v2/deployments"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#FFDEC2', fontSize: 'inherit', fontFamily: 'inherit', opacity: 0.75 }}
           >
-            Supabase status ↗
+            Deploy on Vercel ↗
           </a>
         </div>
       )}
