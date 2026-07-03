@@ -388,6 +388,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
   const [notifyTick, setNotifyTick] = useState(0);
   const [expandedWellshopCategory, setExpandedWellshopCategory] = useState<string | null>(null);
   const [expandedEventIdx, setExpandedEventIdx] = useState<number | null>(null);
+  const [syncingCal, setSyncingCal] = useState(false);
+  const [syncCalError, setSyncCalError] = useState('');
 
   // ── Wellshop enhanced state ──
   interface WellshopHistoryEntry { id: string; date: string; title: string; reflection: string; }
@@ -566,6 +568,28 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       localStorage.removeItem('gcal_token_fresh');
     }
   }, [userNameKey, userTokenKey]);
+
+  // ── Sync team calendar from iCal ───────────────────────────────────────────
+  const handleSyncCalendar = React.useCallback(async () => {
+    setSyncingCal(true);
+    setSyncCalError('');
+    try {
+      const result = await api.syncCalendarFromIcal();
+      if (result.ok) {
+        const refreshed = await api.getCalendarEvents();
+        setKvCalEvents(refreshed || []);
+        showToast(`Synced ${result.count} events`, 'well');
+      } else {
+        setSyncCalError('Sync failed');
+        showToast('Calendar sync failed', 'alert');
+      }
+    } catch (e: any) {
+      setSyncCalError(e.message || 'Sync failed');
+      showToast(e.message || 'Calendar sync failed', 'alert');
+    } finally {
+      setSyncingCal(false);
+    }
+  }, []);
 
   // ── On mount: poll for token exchange completion OR use stored token ────────
   // App.tsx IIFE fires the async token exchange and writes gcal_token_fresh.
@@ -1039,11 +1063,65 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           <>
         <div className="hub-section-header">
           <span className="hub-section-title">Calendar</span>
-          <a
-            href="https://calendar.google.com/calendar/u/0/r"
-            target="_blank" rel="noopener noreferrer"
-            className="hub-gcal-open"
-          >Open Calendar ↗</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={handleSyncCalendar}
+              disabled={syncingCal}
+              title="Sync team calendar"
+              style={{
+                background: syncingCal ? 'rgba(194,91,56,0.08)' : '#FAF6F2',
+                border: '1.5px solid rgba(194,91,56,0.35)',
+                borderRadius: 8,
+                padding: '5px 10px',
+                cursor: syncingCal ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: '0.68rem',
+                fontFamily: 'var(--font-label, Montserrat, sans-serif)',
+                fontWeight: 600,
+                color: '#C25B38',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                opacity: syncingCal ? 0.7 : 1,
+              }}
+            >
+              {syncingCal ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C25B38" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <g>
+                      <line x1="12" y1="2" x2="12" y2="6"/>
+                      <line x1="12" y1="18" x2="12" y2="22"/>
+                      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                      <line x1="2" y1="12" x2="6" y2="12"/>
+                      <line x1="18" y1="12" x2="22" y2="12"/>
+                      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                    </g>
+                  </svg>
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                  Sync
+                </>
+              )}
+            </button>
+            {syncCalError && (
+              <span style={{ fontSize: '0.65rem', color: '#D46B6B', fontFamily: 'var(--font-label)' }}>{syncCalError}</span>
+            )}
+            <a
+              href="https://calendar.google.com/calendar/u/0/r"
+              target="_blank" rel="noopener noreferrer"
+              className="hub-gcal-open"
+            >Open Calendar ↗</a>
+          </div>
         </div>
 
         {/* Layer 1: Shared Team Calendar embed (always visible, no auth) */}

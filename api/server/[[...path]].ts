@@ -57,6 +57,83 @@ function parseList(raw: any): any[] {
 async function getList(key: string): Promise<any[]> { return parseList(await kvGet(key)); }
 async function setList(key: string, list: any[]): Promise<void> { await kvSet(key, JSON.stringify(list)); }
 
+// ── Simple iCal parser (no external deps) ─────────────────────────────────────
+function parseIcal(raw: string): any[] {
+  const lines: string[] = [];
+  const rawLines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  for (const line of rawLines) {
+    if (line.startsWith(' ') || line.startsWith('\t')) {
+      if (lines.length > 0) lines[lines.length - 1] += line.slice(1);
+    } else {
+      lines.push(line);
+    }
+  }
+
+  const events: any[] = [];
+  let inEvent = false;
+  let cur: Record<string, string> = {};
+
+  function flushEvent() {
+    if (!cur.UID) return;
+    const startRaw = cur.DTSTART || '';
+    const endRaw = cur.DTEND || '';
+    const start = parseIcalDate(startRaw);
+    const end = endRaw ? parseIcalDate(endRaw) : deriveEnd(start, startRaw);
+    events.push({
+      id: cur.UID,
+      title: unescapeIcal(cur.SUMMARY || '(No title)'),
+      start,
+      end,
+      location: unescapeIcal(cur.LOCATION || ''),
+      description: unescapeIcal(cur.DESCRIPTION || ''),
+      creator: unescapeIcal(cur.ORGANIZER || 'CR8W Team Calendar'),
+      synced_at: new Date().toISOString(),
+    });
+  }
+
+  for (const line of lines) {
+    const u = line.toUpperCase();
+    if (u === 'BEGIN:VEVENT') { inEvent = true; cur = {}; continue; }
+    if (u === 'END:VEVENT') { inEvent = false; flushEvent(); continue; }
+    if (!inEvent) continue;
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).split(';')[0].toUpperCase();
+    const val = line.slice(idx + 1);
+    cur[key] = val;
+  }
+  return events;
+}
+
+function parseIcalDate(raw: string): string {
+  if (!raw) return new Date().toISOString();
+  // VALUE=DATE:20250701
+  const dateOnlyMatch = raw.match(/^(?:VALUE=DATE:)?(\d{4})(\d{2})(\d{2})$/);
+  if (dateOnlyMatch) {
+    return `${dateOnlyMatch[1]}-${dateOnlyMatch[2]}-${dateOnlyMatch[3]}T00:00:00Z`;
+  }
+  // 20250701T090000Z
+  const dtMatch = raw.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
+  if (dtMatch) {
+    return `${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}T${dtMatch[4]}:${dtMatch[5]}:${dtMatch[6]}Z`;
+  }
+  // Already ISO-ish
+  try { return new Date(raw).toISOString(); } catch { return new Date().toISOString(); }
+}
+
+function deriveEnd(startIso: string, startRaw: string): string {
+  const startDate = new Date(startIso);
+  if (startRaw && /^\d{8}$/.test(startRaw)) {
+    // All-day event, end is next day start
+    return new Date(startDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  }
+  return new Date(startDate.getTime() + 60 * 60 * 1000).toISOString();
+}
+
+function unescapeIcal(s: string): string {
+  return s.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+}
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
 function cors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -178,7 +255,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Calendar events ───────────────────────────────────────────────────────
+// ── Calendar events ───────────────────────────────────────────────────────
     if (resource === 'calendar-events') {
       if (method === 'GET') { res.json(await getList('cr8w_calendar_events')); return; }
       if (method === 'POST') {
@@ -192,6 +269,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }));
         await setList('cr8w_calendar_events', norm);
         res.json({ ok:true, count: norm.length }); return;
+      }
+    }
+
+    // ── Calendar iCal sync ────────────────────────────────────────────────────
+    if (resource === 'calendar-ical-sync') {
+      if (method === 'GET') {
+        res.json({ ok: true, events: await getList('cr8w_calendar_events') }); return;
+      }
+      if (method === 'POST') {
+        const icalUrl = process.env.CR8W_ICAL_URL;
+        if (!icalUrl) { res.status(500).json({ error: 'CR8W_ICAL_URL not set' }); return; }
+        const fetchRes = await fetch(icalUrl, { signal: AbortSignal.timeout(15_000) });
+        if (!fetchRes.ok) { res.status(502).json({ error: `Failed to fetch iCal: ${fetchRes.status}` }); return; }
+        const text = await fetchRes.text();
+        const events = parseIcal(text);
+        await setList('cr8w_calendar_events', events);
+        res.json({ ok: true, count: events.length, events }); return;
       }
     }
 

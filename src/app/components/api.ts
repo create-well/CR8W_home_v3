@@ -151,6 +151,8 @@ export const setInviteCounts = (counts: Omit<InviteCounts, 'updated_at'>) => req
 // Calendar Events (synced from Google Calendar via KV)
 export const getCalendarEvents = () => req<CalendarEventKV[]>('GET', '/calendar-events');
 export const setCalendarEvents = (events: CalendarEventKV[]) => req<{ ok: boolean; count: number }>('POST', '/calendar-events', events);
+export const syncCalendarFromIcal = () => req<{ ok: boolean; count: number; events: CalendarEventKV[] }>('POST', '/calendar-ical-sync');
+export const getCalendarIcalSync = () => req<{ ok: boolean; events: CalendarEventKV[] }>('GET', '/calendar-ical-sync');
 
 // Parking Lot (quick-capture from Playground, KV-backed)
 export interface ParkingLotItem {
