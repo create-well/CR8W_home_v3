@@ -1,4 +1,5 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey, publishableKey } from '/utils/supabase/info';
+const API_KEY = publishableKey || publicAnonKey;
 
 // Pick API base at runtime so the same build works everywhere:
 //   • VITE_API_BASE env var  → explicit override (highest priority)
@@ -20,7 +21,7 @@ function resolveApiBase(): string {
 const BASE = resolveApiBase();
 
 // Auth header: required by Supabase edge function; Vercel routes ignore it.
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` };
+const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` };
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   // One retry for GETs on network-level failures only; mutations fail fast.

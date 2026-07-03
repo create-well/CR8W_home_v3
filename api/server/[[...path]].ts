@@ -13,9 +13,28 @@ import { createClient } from '@supabase/supabase-js';
 // ── Supabase client ───────────────────────────────────────────────────────────
 function sb() {
   const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  if (!url || !key) throw new Error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set');
-  return createClient(url, key);
+  const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) throw new Error('SUPABASE_URL + SUPABASE_SECRET_KEY must be set');
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+// ── Auth: accept publishable key (app-gate) or a valid Supabase user JWT ──────
+async function verifyRequest(req: VercelRequest): Promise<boolean> {
+  const raw = req.headers.authorization ?? '';
+  const token = raw.startsWith('Bearer ') ? raw.slice(7).trim() : '';
+  if (!token) return false;
+  const pubKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? '';
+  // Fast path: exact match against the publishable key (hash-login sessions)
+  if (pubKey && token === pubKey) return true;
+  // JWT path: verify as a Supabase user access token
+  if (pubKey) {
+    try {
+      const c = createClient(process.env.SUPABASE_URL!, pubKey, { auth: { persistSession: false } });
+      const { data, error } = await c.auth.getUser(token);
+      if (!error && data.user) return true;
+    } catch { /* fall through */ }
+  }
+  return !pubKey; // allow when no key configured (dev/preview)
 }
 
 const TABLE = 'kv_store_8dcd9693';
@@ -59,6 +78,13 @@ function readBody(req: VercelRequest): Promise<any> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   cors(res);
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+
+  // Auth gate — health endpoint is public; everything else requires a valid token
+  const pathCheck = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const firstSeg = pathCheck[0] ?? '';
+  if (firstSeg && firstSeg !== 'health') {
+    if (!await verifyRequest(req)) { res.status(401).json({ error: 'Unauthorized' }); return; }
+  }
 
   // req.query.path is the catch-all: undefined | string | string[]
   const pathArr = !req.query.path

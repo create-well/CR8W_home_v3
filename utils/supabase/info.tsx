@@ -2,3 +2,8 @@
 
 export const projectId = "axntibrdivccycxdwlzk"
 export const publicAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4bnRpYnJkaXZjY3ljeGR3bHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTIxNTYsImV4cCI6MjA5ODY4ODE1Nn0.CFAeOeCwyOrOAfi4UecF7IlfUmUQw2pmEB20S80FUMc"
+
+// Supabase @supabase/server credentials (set 2025-07)
+export const publishableKey = "sb_publishable_KKMWtvpxkSGaq-xmie6viQ_pRzAb_4i"
+export const supabaseUrl = "https://axntibrdivccycxdwlzk.supabase.co"
+export const jwksUrl = "https://axntibrdivccycxdwlzk.supabase.co/auth/v1/.well-known/jwks.json"
