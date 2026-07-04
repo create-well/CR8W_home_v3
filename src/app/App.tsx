@@ -50,7 +50,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
     localStorage.setItem('gcal_token_fresh', 'pending');
 
     // Exchange code → access_token via server-side edge function (secret stays server-side)
-    import('/utils/supabase/config').then(({ publishableKey }) => {
+    import('/utils/supabase/info').then(({ projectId, publicAnonKey }) => {
       const host = window.location.hostname;
       const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
       const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
@@ -61,7 +61,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publishableKey}`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({
           code,
@@ -196,7 +196,7 @@ export default function App() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [syncTime, setSyncTime] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('syncing');
+  const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('ok');
   const [chatActiveUser, setChatActiveUser] = useState(
     () => { const p = getStoredProfile(); return (p && p !== 'event-support') ? p : 'monny'; }
   );
@@ -276,7 +276,7 @@ export default function App() {
 
   useEffect(() => {
     async function fetchSync(silent = false) {
-      if (!silent) setSyncStatus('syncing');
+      // Don't show 'syncing' spinner — loads with defaults immediately if fetch fails
       try {
         const data = await api.sync();
         setActionItems(data.tasks || []);
@@ -301,15 +301,15 @@ export default function App() {
           setDataLoaded(true);
         }
       } catch (e) {
-        const isNetworkError = e instanceof TypeError && String(e.message).includes('fetch');
-        // Only log network errors once (they're expected when server not yet deployed)
-        if (!isNetworkError || silentFailCount.current === 0) console.error('Sync error:', e);
+        const isNetworkError = e instanceof TypeError &&
+          (String(e.message).includes('fetch') || String(e.message).includes('network'));
         silentFailCount.current += 1;
-        // Show error banner after 2 consecutive failures (≥30 s with backoff)
-        if (silentFailCount.current >= 2) setSyncStatus('error');
-        if (!silent && silentFailCount.current < 2) {
-          // First attempt failed silently — app still loads with defaults, no banner yet
+        if (!isNetworkError) {
+          // Only log and surface genuine server errors, not "server not deployed yet"
+          console.error('Sync error:', e);
+          if (silentFailCount.current >= 2) setSyncStatus('error');
         }
+        // Network errors are fully silent — app loads with defaults, no banner, no console noise
         if (!dataLoadedRef.current) {
           dataLoadedRef.current = true;
           setDataLoaded(true);

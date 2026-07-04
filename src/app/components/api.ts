@@ -1,6 +1,4 @@
-import { publishableKey, publicAnonKey } from '/utils/supabase/config'
-// Supabase publishable key — safe to embed (not a secret, designed for public clients)
-const API_KEY = publishableKey || publicAnonKey
+import { projectId, publicAnonKey } from '/utils/supabase/info';
 // Supabase publishable key — safe to embed (not a secret, designed for public clients)
 const API_KEY = 'sb_publishable_KKMWtvpxkSGaq-xmie6viQ_pRzAb_4i' || publicAnonKey;
 
