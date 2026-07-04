@@ -1,6 +1,6 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { publishableKey, publicAnonKey } from '/utils/supabase/config'
 // Supabase publishable key — safe to embed (not a secret, designed for public clients)
-const API_KEY = 'sb_publishable_KKMWtvpxkSGaq-xmie6viQ_pRzAb_4i' || publicAnonKey;
+const API_KEY = publishableKey || publicAnonKey
 
 // Pick API base at runtime so the same build works everywhere:
 //   • VITE_API_BASE env var  → explicit override (highest priority)
