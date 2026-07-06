@@ -60,6 +60,19 @@ export async function signOut(): Promise<void> {
   try { localStorage.removeItem('cr8w_user_profile'); } catch {}
 }
 
+// — Email → profile mapping (each team member gets their own profile by login email)
+const EMAIL_PROFILE_MAP: Record<string, string> = {
+'mb@tablante.com': 'monny',
+'sunshine@sunshinedigtl.com': 'sunshine',
+'museinmotionmedia@gmail.com': 'bingle',
+'ramovisuals@gmail.com': 'omar',
+// 'event-support@example.com': 'event-support', // add when known
+};
+export function emailToProfile(email?: string | null): string | undefined {
+if (!email) return undefined;
+return EMAIL_PROFILE_MAP[email.trim().toLowerCase()];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 interface Props { onAuthenticated: (profileKey: string) => void; }
 type Mode = 'signin' | 'register';
@@ -110,7 +123,7 @@ export function AuthGate({ onAuthenticated }: Props) {
       if (!active) return;
       const session = data.session;
       if (session) {
-        const key = session.user?.user_metadata?.cr8w_profile ?? getStoredProfile() ?? 'omar';
+        const key = emailToProfile(session.user?.email) ?? session.user?.user_metadata?.cr8w_profile ?? getStoredProfile() ?? 'omar';
         localStorage.setItem('cr8w_user_profile', key);
         onAuthenticated(key);
       } else {
@@ -133,7 +146,7 @@ export function AuthGate({ onAuthenticated }: Props) {
       triggerShake();
       return;
     }
-    const key = data.user?.user_metadata?.cr8w_profile ?? 'omar';
+    const key = emailToProfile(data.user?.email) ?? data.user?.user_metadata?.cr8w_profile ?? 'omar';
     localStorage.setItem('cr8w_user_profile', key);
     onAuthenticated(key);
   }
