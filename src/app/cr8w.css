@@ -1071,6 +1071,7 @@ a.gcc-pill-link:hover { background: rgba(255,255,255,0.52); transform: translate
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .nav-avatars { display: none; }
+  .nav-signout-desktop { display: none !important; }
   .hamburger { display: flex; }
   .cr-main { padding-left: 16px; padding-right: 16px; }
   .hub-header { padding: 32px 12px 24px; }

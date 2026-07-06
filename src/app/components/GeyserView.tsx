@@ -137,7 +137,7 @@ export function GeyserView({
   useEffect(() => {
     api.getInviteCounts()
       .then(data => { setInviteCounts(data); setInviteLoaded(true); })
-      .catch(e => { console.error('Failed to fetch invite counts:', e); setInviteLoaded(true); });
+      .catch(e => { if (!(e instanceof TypeError)) console.error(e); setInviteLoaded(true); });
   }, []);
 
   // Calendar events from KV (synced from shared Google Calendar)
@@ -146,7 +146,7 @@ export function GeyserView({
   useEffect(() => {
     api.getCalendarEvents()
       .then(data => { setKvCalEvents(data || []); setKvCalLoaded(true); })
-      .catch(e => { console.error('Failed to fetch KV calendar events:', e); setKvCalLoaded(true); });
+      .catch(e => { if (!(e instanceof TypeError)) console.error(e); setKvCalLoaded(true); });
   }, []);
 
   const daysToLaunch = getDaysToLaunch();

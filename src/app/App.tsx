@@ -13,7 +13,7 @@ import { DecomprocessFAB } from './components/DecomprocessFAB';
 import { PlaygroundView } from './components/PlaygroundView';
 import { ToastContainer } from './components/Toast';
 import { useThemeInit } from './components/ThemeProvider';
-import { LoginGate, isAuthenticated, getStoredProfile } from './components/LoginGate';
+import { AuthGate, isAuthenticated, getStoredProfile, signOut as authSignOut } from './components/AuthGate';
 import {
   DEFAULT_ANNOUNCEMENTS,
   STATIONS_DEFAULT,
@@ -50,7 +50,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
     localStorage.setItem('gcal_token_fresh', 'pending');
 
     // Exchange code → access_token via server-side edge function (secret stays server-side)
-    import('/utils/supabase/config').then(({ publishableKey }) => {
+    import('/utils/supabase/info').then(({ projectId, publicAnonKey }) => {
       const host = window.location.hostname;
       const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
       const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
@@ -61,7 +61,7 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publishableKey}`,
+          Authorization: `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({
           code,
@@ -189,6 +189,13 @@ export default function App() {
   function handleAuthenticated(profileKey: string) {
     setAuthed(true);
     setChatActiveUser(profileKey === 'event-support' ? 'monny' : profileKey);
+  }
+
+  async function handleSignOut() {
+    await authSignOut();
+    setAuthed(false);
+    // Hard reload to reset all in-memory state cleanly
+    window.location.reload();
   }
 
   const [currentView, setCurrentView] = useState<View>('hub');
@@ -769,12 +776,12 @@ export default function App() {
 
   // Show login gate until authenticated
   if (!authed) {
-    return <LoginGate onAuthenticated={handleAuthenticated} />;
+    return <AuthGate onAuthenticated={handleAuthenticated} />;
   }
 
   return (
     <div className="cr8w-app" style={{ paddingBottom: '20px' }}>
-      <TopNav currentView={currentView} onNavigate={navigate} syncStatus={syncStatus} />
+      <TopNav currentView={currentView} onNavigate={navigate} syncStatus={syncStatus} onSignOut={handleSignOut} activeUser={chatActiveUser} />
 
       {/* Domain setup banner — only on non-custom-domain URLs */}
       {showDomainBanner && (

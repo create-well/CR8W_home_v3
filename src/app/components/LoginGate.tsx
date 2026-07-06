@@ -14,7 +14,7 @@ import cwLogoImg from 'figma:asset/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png'
 
 // ── Default password ──────────────────────────────────────────────────────────
 // SHA-256 of "createwell" — set VITE_APP_PASSWORD_HASH to change it
-const DEFAULT_HASH = 'fe5c79ff0abb6da77f4e8e80e0ef53c5fa79bd5f87e96a07fafec4f40d1d1a03';
+const DEFAULT_HASH = '625201befb1355e692947dafb5bd855245679d2d40c19eb4745e9dca302a2016';
 const STORED_HASH: string = (import.meta.env.VITE_APP_PASSWORD_HASH as string | undefined) ?? DEFAULT_HASH;
 
 async function sha256hex(text: string): Promise<string> {
@@ -92,8 +92,9 @@ export function LoginGate({ onAuthenticated }: Props) {
     try {
       const hash = await sha256hex(pw.trim());
       if (hash !== STORED_HASH) {
-        setError('Incorrect password. Tap "Need help?" below for the hint.');
+        setError('Incorrect password — see the hint above for the default.');
         setPw('');
+        setShowHint(true);
         triggerShake();
         return;
       }

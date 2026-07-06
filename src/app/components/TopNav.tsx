@@ -21,9 +21,11 @@ interface TopNavProps {
   currentView: string;
   onNavigate: (view: string) => void;
   syncStatus?: 'ok' | 'error' | 'syncing';
+  onSignOut?: () => void;
+  activeUser?: string;
 }
 
-export function TopNav({ currentView, onNavigate, syncStatus }: TopNavProps) {
+export function TopNav({ currentView, onNavigate, syncStatus, onSignOut, activeUser }: TopNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showWellSettings, setShowWellSettings] = useState(false);
@@ -214,6 +216,26 @@ export function TopNav({ currentView, onNavigate, syncStatus }: TopNavProps) {
           })()}
         </div>
 
+        {/* Desktop sign-out */}
+        {onSignOut && (
+          <button
+            className="nav-signout-desktop"
+            onClick={onSignOut}
+            title="Sign out"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'none', border: '1px solid var(--border-soft, rgba(196,164,132,0.3))',
+              borderRadius: 8, padding: '5px 10px', marginLeft: 10, cursor: 'pointer',
+              fontFamily: 'var(--font-label, sans-serif)', fontSize: '0.68rem', fontWeight: 600,
+              color: 'var(--text-muted, #6B5F7A)', transition: 'all 0.15s', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#C25B38'; e.currentTarget.style.borderColor = '#C25B38'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted, #6B5F7A)'; e.currentTarget.style.borderColor = 'var(--border-soft, rgba(196,164,132,0.3))'; }}
+          >
+            ⏻ sign out
+          </button>
+        )}
+
         <button className="hamburger" onClick={() => setMobileOpen(!mobileOpen)}>
           <span></span><span></span><span></span>
         </button>
@@ -361,6 +383,24 @@ export function TopNav({ currentView, onNavigate, syncStatus }: TopNavProps) {
               </div>
             )}
           </div>
+
+          {/* Sign out */}
+          {onSignOut && (
+            <div style={{ borderTop: '1px solid var(--border-soft, rgba(196,164,132,0.12))', margin: '8px 0 0', padding: '8px 0 0' }}>
+              <button
+                className="mobile-menu-link"
+                onClick={() => { setMobileOpen(false); onSignOut(); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#C25B38' }}
+              >
+                <span style={{ fontSize: '0.9rem' }}>⏻</span> sign out
+                {activeUser && (
+                  <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'var(--font-label)' }}>
+                    signed in as {activeUser}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
