@@ -198,8 +198,8 @@ export function GeyserView({
         )}
 
         <div className="geyser-big-countdown">
-          <div className="gbc-num">{daysToLaunch}</div>
-          <div className="gbc-label">days until<br />April 15, 2026</div>
+          <div className="gbc-num" style={{ fontSize: '2rem' }}>To Be Scheduled</div>
+          <a className="gbc-label" href="https://partiful.com/e/HaA3zjBBmMzbNQDgicNd" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cr8w-primary)', textDecoration: 'underline', display: 'block' }}>Podyap launch — RSVP & plan ↗</a>
         </div>
 
         {/* Key Dates mini-timeline */}
@@ -954,8 +954,8 @@ export function GeyserView({
         <div className="geyser-header-subtitle">the launchpad</div>
         <div className="geyser-header-info">
           <div className="geyser-header-countdown">
-            <span className="geyser-countdown-num">{daysToLaunch}</span>
-            <span className="geyser-countdown-label">days til we go live</span>
+            <span className="geyser-countdown-num">TBS</span>
+            <a className="geyser-countdown-label" href="https://partiful.com/e/HaA3zjBBmMzbNQDgicNd" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cr8w-primary)', textDecoration: 'underline' }}>To Be Scheduled · Podyap launch ↗</a>
           </div>
         </div>
       </div>
