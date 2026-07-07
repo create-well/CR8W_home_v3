@@ -406,7 +406,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       const apiBase = (import.meta.env.VITE_API_BASE as string | undefined)
         ?? (() => {
           const h = window.location.hostname;
-          return (h.endsWith('.vercel.app') || h === 'createwell.monnyfest.co' || h === 'localhost')
+          return (h.endsWith('.vercel.app') || h === 'createwell.monnyfest.co' || h === 'cr8w.com' || h === 'www.cr8w.com' || h === 'localhost' || h === '127.0.0.1')
             ? '/api/server' : 'https://cr8w-home-v2.vercel.app/api/server';
         })();
       const res = await fetch(`${apiBase}/calendar-ical-sync`, {
