@@ -927,7 +927,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
         };
 
         function MiniCard({ emoji, title, borderColor, badge, subtitle, onClick, children }: {
-          emoji: string; title: string; borderColor: string; badge?: number | string; subtitle: string;
+          emoji: string; title: string; borderColor: string; badge?: number | string; subtitle: React.ReactNode;
           onClick: () => void; children?: React.ReactNode;
         }) {
           return (
@@ -970,7 +970,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               title="Moves"
               borderColor="var(--cr8w-primary, #7BA89D)"
               badge={openTasks.length}
-              subtitle={`${openTasks.length} in motion this week`}
+              subtitle={openTasks.length > 0 ? `${openTasks.length} in motion this week` : 'No moves yet · Add one →'}
               onClick={() => onNavigate('geyser')}
             />
             {/* Stations */}
@@ -979,7 +979,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               title="Stations"
               borderColor="var(--cr8w-secondary, #B8A9D4)"
               badge={confirmedStations}
-              subtitle={`${confirmedStations} of ${totalStations} confirmed`}
+              subtitle={confirmedStations > 0 ? `${confirmedStations} of ${totalStations} confirmed` : 'Set up your stations →'}
               onClick={() => onNavigateGeyserStations()}
             />
             {/* Guests */}
@@ -988,7 +988,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               title="Guests"
               borderColor="#6BAF6B"
               badge={inviteLoaded ? inviteCounts.confirmed : '—'}
-              subtitle={inviteLoaded && inviteCounts.total > 0 ? `${inviteCounts.confirmed} confirmed of ${inviteCounts.total}` : 'synced from invite sheet'}
+              subtitle={inviteLoaded && inviteCounts.total > 0 ? `${inviteCounts.confirmed} confirmed of ${inviteCounts.total}` : 'No guests synced yet · Connect invite sheet →'}
               onClick={() => onNavigate('geyser')}
             />
             {/* Team */}
@@ -996,7 +996,9 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               emoji={'\u{1F465}'}
               title="Team"
               borderColor="#E8C875"
-              subtitle={rolesLabel}
+              subtitle={rolesLabel === 'needs update' ? (
+                <span style={{ color: 'var(--cr8w-primary, #7BA89D)', textDecoration: 'underline', cursor: 'pointer' }}>needs update →</span>
+              ) : rolesLabel}
               onClick={() => onNavigate('geyser')}
             >
               <div style={{ display: 'flex', marginTop: 2, marginBottom: 2 }}>
@@ -1027,7 +1029,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                 fontSize: '1.2rem', fontWeight: 800, color: 'var(--cr8w-text, #2D2438)',
                 fontFamily: "var(--font-display)", lineHeight: 1.1,
                 marginTop: 1, marginBottom: 1,
-              }}>{daysToLaunch} days</div>
+              }}>{daysToLaunch < 0 ? 'Launched' : `${daysToLaunch} days to launch`}</div>
             </MiniCard>
           </div>
         );

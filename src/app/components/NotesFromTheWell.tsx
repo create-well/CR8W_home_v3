@@ -156,7 +156,7 @@ export function NotesFromTheWell({ wellNotes, onAddNote, onLandNote }: Props) {
                 transition: 'all 0.15s',
                 letterSpacing: '0.03em',
               }}
-            >drop it in \uD83D\uDCA7</button>
+            >drop it in 💧</button>
           )}
         </div>
 

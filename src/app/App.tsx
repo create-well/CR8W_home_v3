@@ -210,7 +210,8 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(() => shouldShowOnboarding(initialProfile === 'event-support' ? 'monny' : initialProfile));
   const [showDomainBanner, setShowDomainBanner] = useState(() => {
     // Only show if NOT on the custom domain and not previously dismissed this session
-    const isCustomDomain = window.location.hostname === 'createwell.monnyfest.co';
+    const host = window.location.hostname;
+    const isCustomDomain = host === 'createwell.monnyfest.co' || host === 'cr8w.com' || host === 'www.cr8w.com';
     const dismissed = sessionStorage.getItem('cr8w_domain_banner_dismissed');
     return !isCustomDomain && !dismissed;
   });
