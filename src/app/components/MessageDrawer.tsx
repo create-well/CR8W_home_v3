@@ -481,7 +481,7 @@ export function MessageDrawer({
   const focusFilteredEarlier = focusMode ? earlierTodayMsgs.filter(m => isFocusMsg(m)) : earlierTodayMsgs;
   const focusFilteredOlder = focusMode ? olderMsgs.filter(m => isFocusMsg(m)) : olderMsgs;
 
-  const activeP = PERSONS[activeAs];
+  const activeP = PERSONS[activeAs] || { name: activeAs || 'Member', emoji: '\u{1F464}', color: '#7BA89D' };
   const replyTarget = replyToId !== null ? messages.find(m => m.id === replyToId) : null;
 
   // ── Whether to show digest (only when new items) ──
