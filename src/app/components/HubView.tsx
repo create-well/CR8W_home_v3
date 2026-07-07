@@ -22,8 +22,8 @@ const WELLSHOP_TAG_MAP: Record<string, string[]> = {
 
 function matchesCategory(workshop: Workshop, categoryKey: string): boolean {
   const keywords = WELLSHOP_TAG_MAP[categoryKey] || [];
-  const titleLower = workshop.title.toLowerCase();
-  const descLower = workshop.description.toLowerCase();
+  const titleLower = (workshop.title || '').toLowerCase();
+  const descLower = (workshop.description || '').toLowerCase();
   const tagSet = (workshop.tags || []).map(t => t.toLowerCase());
   return keywords.some(kw =>
     tagSet.includes(kw) || titleLower.includes(kw) || descLower.includes(kw)
