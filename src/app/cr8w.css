@@ -52,7 +52,7 @@ html.cw-no-motion *::after {
   /* text */
   --text-primary:   #2D2438;
   --text-secondary: #443855;
-  --text-muted:     #6B5F7A;
+  --text-muted:     #574D65; /* darkened for WCAG AA on tinted backgrounds */
   --shadow-sm: 0 1px 5px rgba(45,36,56,0.10);
   --shadow-md: 0 4px 18px rgba(45,36,56,0.12);
   --shadow-lg: 0 8px 32px rgba(45,36,56,0.15);

@@ -60,6 +60,32 @@ export async function signOut(): Promise<void> {
   try { localStorage.removeItem('cr8w_user_profile'); } catch {}
 }
 
+// ── Per-UID profile registry (bridges Supabase Auth users into PERSONS) ──────
+// New registrants get a distinct profile key `user_<uid>` so they never
+// share or overwrite an existing founder's profile. Mirrored to localStorage
+// so the dashboard's PERSONS lookup resolves them to their own identity.
+export interface PersonalProfile {
+  name: string;
+  role: string;              // picker selection (sunshine|monny|bingle|omar|event-support)
+  selectedFromPicker: string;
+}
+export function registerPersonalProfile(profileKey: string, p: PersonalProfile): void {
+  try {
+    const raw = localStorage.getItem('cr8w_personal_profiles');
+    const map = raw ? JSON.parse(raw) : {};
+    map[profileKey] = { ...p, updatedAt: new Date().toISOString() };
+    localStorage.setItem('cr8w_personal_profiles', JSON.stringify(map));
+  } catch {}
+}
+export function getPersonalProfile(profileKey: string): PersonalProfile | null {
+  try {
+    const raw = localStorage.getItem('cr8w_personal_profiles');
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map[profileKey] ?? null;
+  } catch { return null; }
+}
+
 // — Email → profile mapping (each team member gets their own profile by login email)
 const EMAIL_PROFILE_MAP: Record<string, string> = {
 'mb@tablante.com': 'monny',
@@ -123,7 +149,8 @@ export function AuthGate({ onAuthenticated }: Props) {
       if (!active) return;
       const session = data.session;
       if (session) {
-        const key = emailToProfile(session.user?.email) ?? session.user?.user_metadata?.cr8w_profile ?? getStoredProfile() ?? 'omar';
+        // Precedence: personal per-UID profile (metadata) → email→team map (founders only) → stored → 'omar'
+        const key = session.user?.user_metadata?.cr8w_profile ?? emailToProfile(session.user?.email) ?? getStoredProfile() ?? 'omar';
         localStorage.setItem('cr8w_user_profile', key);
         onAuthenticated(key);
       } else {
@@ -146,7 +173,8 @@ export function AuthGate({ onAuthenticated }: Props) {
       triggerShake();
       return;
     }
-    const key = emailToProfile(data.user?.email) ?? data.user?.user_metadata?.cr8w_profile ?? 'omar';
+    // Precedence: personal per-UID profile (metadata) → email→team map → 'omar'
+    const key = data.user?.user_metadata?.cr8w_profile ?? emailToProfile(data.user?.email) ?? 'omar';
     localStorage.setItem('cr8w_user_profile', key);
     onAuthenticated(key);
   }
@@ -156,21 +184,54 @@ export function AuthGate({ onAuthenticated }: Props) {
     if (!email.trim() || !password || !displayName.trim()) return;
     if (password.length < 6) { setError('Password must be at least 6 characters.'); triggerShake(); return; }
     setBusy(true); setError(''); setNotice('');
+
+    // Registration must NOT reuse a shared team profile slot. We create the
+    // account first, then derive a distinct per-UID profile key so the new
+    // user has their own row (chosen picker option becomes the "role").
     const { data, error: err } = await client().auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { data: { cr8w_profile: profile, display_name: displayName.trim() } },
+      // Temporary metadata; we'll overwrite with the UID-keyed profile below.
+      options: { data: {
+        cr8w_display_name: displayName.trim(),
+        cr8w_role_selection: profile,
+      }},
     });
-    setBusy(false);
     if (err) {
-      setError(err.message);
-      triggerShake();
-      return;
+      setBusy(false); setError(err.message); triggerShake(); return;
     }
-    localStorage.setItem('cr8w_user_profile', profile);
-    // If email confirmation is required, there's no session yet
+
+    // Build a distinct per-UID profile key — never collides with another user.
+    const uid = data.user?.id ?? '';
+    const personalProfileKey = uid ? `user_${uid}` : profile;
+
+    // Persist the personal profile into user_metadata so it travels with the
+    // auth user across devices and cannot be overwritten by anyone else.
+    if (data.session && uid) {
+      try {
+        await client().auth.updateUser({
+          data: {
+            cr8w_profile: personalProfileKey,      // the distinct row key
+            cr8w_profile_role: profile,            // role selected from picker
+            cr8w_display_name: displayName.trim(),
+            cr8w_user_id: uid,
+          },
+        });
+      } catch { /* non-fatal — retry on next sign-in */ }
+
+      // Also register the profile locally so PERSONS[personalProfileKey] resolves
+      // to this user's identity (name, emoji, color) on the dashboard.
+      registerPersonalProfile(personalProfileKey, {
+        name: displayName.trim(),
+        role: profile,
+        selectedFromPicker: profile,
+      });
+    }
+
+    setBusy(false);
+    localStorage.setItem('cr8w_user_profile', personalProfileKey);
     if (data.session) {
-      onAuthenticated(profile);
+      onAuthenticated(personalProfileKey);
     } else {
       setNotice('Account created! Check your email to confirm, then sign in.');
       setMode('signin');

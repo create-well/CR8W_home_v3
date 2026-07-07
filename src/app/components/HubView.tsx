@@ -9,6 +9,7 @@ import {
 import { MBodyWidget } from './MBodyWidget';
 import { NotesFromTheWell } from './NotesFromTheWell';
 import { ArriveState, shouldShowArriveState } from './ArriveState';
+import { getPersonalProfile } from './AuthGate';
 import type { Task, Station, WellNote, Workshop, CoFlowDate, CoFlowCheckin, InviteCounts, CalendarEventKV } from './api';
 import * as api from './api';
 
@@ -122,7 +123,7 @@ function LogoGCal({ size = 28 }: { size?: number }) {
 
 const WORKSPACE_TOOLS = [
   { id: 'gmail',    label: 'Gmail',            Logo: LogoGmail,       href: 'https://mail.google.com' },
-  { id: 'gcal',     label: 'Google Calendar',  Logo: LogoGCal,        href: 'https://calendar.google.com/calendar/u/0/r' },
+  // Google Calendar tile removed — calendar has its own dedicated section with 'Open ↗' link.
   { id: 'drive',    label: 'CW Drive',         Logo: LogoGoogleDrive, href: 'https://drive.google.com/drive/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a' },
 ];
 
@@ -341,6 +342,18 @@ function getGreeting() {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+// Resolve activeUser (either a built-in PERSONS key or a per-UID user_<uid> key)
+// to a Person-shaped object. Personal profiles come from AuthGate's local store.
+function resolveActivePerson(activeUser: string | undefined): { name: string; emoji: string; color: string } | null {
+  if (!activeUser) return null;
+  if (PERSONS[activeUser]) return PERSONS[activeUser];
+  const personal = getPersonalProfile(activeUser);
+  if (!personal) return null;
+  // Use the picker role's visual identity but the user's own name.
+  const template = PERSONS[personal.role] ?? PERSONS['omar'];
+  return { name: personal.name, emoji: template.emoji, color: template.color };
 }
 
 export function HubView({ onNavigate, onNavigateGeyserStations, announcements, brainDumps, onAddBrainDump, onDeleteBrainDump, syncTime, activeUser, wellNotes, onAddWellNote, onLandWellNote, workshops = [], coFlowDates = [], coFlowCheckins = [], actionItems = [], stations = [] }: HubViewProps) {
@@ -824,17 +837,24 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       {/* Greeting + Date */}
       <div className="hub-greeting-row">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {activeUser && PERSONS[activeUser] && (
-            <span style={{
-              width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0,
-              background: `${PERSONS[activeUser].color}22`,
-              border: `2px solid ${PERSONS[activeUser].color}55`,
-            }}>{PERSONS[activeUser].emoji}</span>
-          )}
-          <span className="hub-greeting">
-            {getGreeting()}{activeUser && PERSONS[activeUser] ? `, ${PERSONS[activeUser].name}` : ''}
-          </span>
+          {(() => {
+            const me = resolveActivePerson(activeUser);
+            return (
+              <>
+                {me && (
+                  <span style={{
+                    width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0,
+                    background: `${me.color}22`,
+                    border: `2px solid ${me.color}55`,
+                  }}>{me.emoji}</span>
+                )}
+                <span className="hub-greeting">
+                  {getGreeting()}{me ? `, ${me.name}` : ''}
+                </span>
+              </>
+            );
+          })()}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="hub-greeting-date">{dateLabel}</span>
@@ -951,7 +971,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                 )}
               </div>
               {children}
-              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #8A7D72)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #6B5F55)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>
             </button>
           );
         }
@@ -1006,15 +1026,22 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                   { key: 'sunshine', emoji: '☀️', color: '#D4A5A5' },
                   { key: 'monny', emoji: '🌊', color: '#7BA89D' },
                   { key: 'bingle', emoji: '✨', color: '#B8A9D4' },
-                ].map((p, i) => (
-                  <div key={p.key} style={{
-                    width: 24, height: 24, borderRadius: '50%',
-                    background: `${p.color}33`, border: `1.5px solid ${p.color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.7rem', marginLeft: i > 0 ? -4 : 0,
-                    position: 'relative', zIndex: 3 - i,
-                  }}>{p.emoji}</div>
-                ))}
+                ].map((p, i) => {
+                  const personName = p.key.charAt(0).toUpperCase() + p.key.slice(1);
+                  return (
+                    <div key={p.key}
+                      role="img"
+                      aria-label={personName}
+                      title={personName}
+                      style={{
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: `${p.color}33`, border: `1.5px solid ${p.color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.7rem', marginLeft: i > 0 ? -4 : 0,
+                        position: 'relative', zIndex: 3 - i,
+                      }}>{p.emoji}</div>
+                  );
+                })}
               </div>
             </MiniCard>
             {/* Timeline */}
@@ -1132,12 +1159,12 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
             style={{ accentColor: '#1A73E8', width: 16, height: 16 }}
           />
           Show my personal events
-          {activeUser && PERSONS[activeUser] && (
+          {activeUser && resolveActivePerson(activeUser) && (
             <span style={{
               fontSize: '0.72rem', fontWeight: 500,
-              color: PERSONS[activeUser].color, opacity: 0.8,
+              color: resolveActivePerson(activeUser)!.color, opacity: 0.8,
             }}>
-              ({PERSONS[activeUser].emoji} {PERSONS[activeUser].name})
+              ({resolveActivePerson(activeUser)!.emoji} {resolveActivePerson(activeUser)!.name})
             </span>
           )}
         </label>
@@ -1992,6 +2019,9 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               <span className="hub-section-title">Tools</span>
             </div>
 
+            {/* Sub-label */}
+            <div style={{ fontFamily: "var(--font-label)", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", margin: "0 0 8px", paddingLeft: 2 }}>Quick Links</div>
+
             {/* CR8W cluster: Invite List · Stations */}
             <div className="hub-tools-grid hub-tools-grid-2">
               <a
@@ -2012,7 +2042,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
             </div>
 
             {/* Workspace tools */}
-            <div className="hub-tools-grid hub-tools-grid-3">
+            <div className="hub-tools-grid hub-tools-grid-2">
               {WORKSPACE_TOOLS.map(({ id, label, Logo, href }) => (
                 <a
                   key={id}
@@ -2031,7 +2061,11 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
             </div>
           </div>
 
-          {/* 3 Avatar Circles — expandable profile cards */}
+          {/* Divider + TEAM sub-label */}
+          <div style={{ borderTop: '1px solid var(--border-soft, rgba(196,164,132,0.2))', margin: '14px 0 12px' }} />
+          <div style={{ fontFamily: "var(--font-label)", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)", margin: "0 0 8px", paddingLeft: 2 }}>Team</div>
+
+          {/* Persona avatar tiles — expandable profile cards */}
           <div className="hub-avatars-row" style={{ position: 'relative' }}>
             {Object.entries(PERSONS).map(([key, p]) => {
               const isExpanded = expandedProfileKey === key;
@@ -2094,7 +2128,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                       {/* Zone description */}
                       <div style={{
                         fontFamily: "var(--font-label)", fontSize: '12px', fontStyle: 'italic',
-                        color: 'var(--text-muted, #8A7D72)', lineHeight: 1.4, marginBottom: 10,
+                        color: 'var(--text-muted, #6B5F55)', lineHeight: 1.4, marginBottom: 10,
                       }}>
                         {meta?.zone}
                       </div>
@@ -2131,7 +2165,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <span style={{
                           fontFamily: 'var(--font-label)', fontSize: '0.56rem', fontWeight: 700,
-                          color: 'var(--text-muted, #8A7D72)', textTransform: 'uppercase', letterSpacing: '0.03em',
+                          color: 'var(--text-muted, #6B5F55)', textTransform: 'uppercase', letterSpacing: '0.03em',
                         }}>energy</span>
                         <div style={{ display: 'flex', gap: 3 }}>
                           {[1, 2, 3].map(seg => (
@@ -2145,7 +2179,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                         </div>
                         <span style={{
                           fontFamily: 'var(--font-label)', fontSize: '0.52rem',
-                          color: 'var(--text-muted, #8A7D72)', fontStyle: 'italic',
+                          color: 'var(--text-muted, #6B5F55)', fontStyle: 'italic',
                         }}>
                           {energyLevel === 3 ? 'fired up' : energyLevel === 2 ? 'flowing' : energyLevel === 1 ? 'foggy' : 'not set'}
                         </span>

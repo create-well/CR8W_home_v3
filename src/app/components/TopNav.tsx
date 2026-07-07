@@ -111,6 +111,7 @@ export function TopNav({ currentView, onNavigate, syncStatus, onSignOut, activeU
                 className={`nav-avatar-circle ${currentView === key ? 'nav-avatar-active' : ''}`}
                 onClick={() => setExpandedProfile(expandedProfile === key ? null : key)}
                 title={person.name}
+                aria-label={`${person.name} — open profile`}
                 style={{
                   background: person.color,
                   zIndex: CO_FOUNDERS.length - i,
@@ -258,6 +259,7 @@ export function TopNav({ currentView, onNavigate, syncStatus, onSignOut, activeU
                   key={key}
                   onClick={(e) => { e.stopPropagation(); setExpandedProfile(expandedProfile === key ? null : key); }}
                   title={person.name}
+                  aria-label={`${person.name} — open profile`}
                   style={{
                     width: 24, height: 24, borderRadius: '50%',
                     background: person.color,
