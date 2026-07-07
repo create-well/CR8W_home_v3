@@ -89,7 +89,7 @@ export function getPersonalProfile(profileKey: string): PersonalProfile | null {
 // — Email → profile mapping (each team member gets their own profile by login email)
 const EMAIL_PROFILE_MAP: Record<string, string> = {
 'mb@tablante.com': 'monny',
-'sunshine@sunshinedigtl.com': 'sunshine',
+'sunshine@sunshinedgtl.com': 'sunshine',
 'museinmotionmedia@gmail.com': 'bingle',
 'ramovisuals@gmail.com': 'omar',
 // 'event-support@example.com': 'event-support', // add when known
