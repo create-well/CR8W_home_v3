@@ -80,16 +80,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
   // Auth gate — health endpoint is public; everything else requires a valid token
-  const pathCheck = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
-  const firstSeg = pathCheck[0] ?? '';
+  const segCheck = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
+  const qpCheck = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const firstSeg = (segCheck.length ? segCheck : qpCheck)[0] ?? '';
   if (firstSeg && firstSeg !== 'health') {
     if (!await verifyRequest(req)) { res.status(401).json({ error: 'Unauthorized' }); return; }
   }
 
   // req.query.path is the catch-all: undefined | string | string[]
-  const pathArr = !req.query.path
-    ? []
-    : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const urlSegs = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
+  const qp = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const pathArr = urlSegs.length ? urlSegs : qp;
 
   const [resource = '', id = '', sub = ''] = pathArr;
   const method = req.method ?? 'GET';
