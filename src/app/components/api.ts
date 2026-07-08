@@ -18,8 +18,7 @@ function resolveApiBase(): string {
   // Figma Make preview iframe — relative URLs don't resolve here
   // Absolute Vercel URL — works from any origin including Figma Make preview.
   // Override with VITE_API_BASE env var if you use a custom domain or alias.
-  return 'https://cr8w-home-v2.vercel.app/api/server';
-}
+  return (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.startsWith('http')) ? '/api/server' : 'https://cr8w-home-v2.vercel.app/api/server';}
 
 const BASE = resolveApiBase();
 
