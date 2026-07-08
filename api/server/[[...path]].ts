@@ -236,8 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 ]*:([^
 ]+)`);
             const hit = block.match(r);
-            return hit ? hit[1].replace(/\n/g, '
-').replace(/\,/g, ',').replace(//g, '').trim() : '';
+                    return hit ? hit[1].replace(/\r/g, '').replace(/\n/g, ' ').replace(/\,/g, ',').trim() : '';
           };
           const rawStart = prop('DTSTART');
           const rawEnd   = prop('DTEND');
