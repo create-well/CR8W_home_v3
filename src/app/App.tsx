@@ -683,8 +683,7 @@ export default function App() {
     try {
       const created = await api.createWorkshopResource(r);
       setWorkshopResources(prev => [...prev, created]);
-    } catch (e) { console.error('Add workshop resource error:', e); }
-  }
+    } catch (e: any) { console.error('Add workshop resource error:', e); alert('Could not save resource: ' + (e?.message || String(e))); }  }
 
   async function deleteWorkshopResource(id: number) {
     try {
