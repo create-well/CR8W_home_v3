@@ -352,6 +352,24 @@ const [showLogin, setShowLogin] = useState(false);
     schedulePoll();
     return () => { if (pollRef.current) clearTimeout(pollRef.current as any); };
   }, []); // runs once — no stale closure, dataLoadedRef is mutable
+  
+  // — Instant refresh when the tab regains focus/visibility ——————
+  // Poll interval can back off up to 5 min; this makes the dashboard
+  // feel current the moment you return to it (e.g. after checking a
+  // calendar or email). Silent (no spinner); reuses the stable ref.
+  useEffect(() => {
+    const refreshNow = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSyncRef.current?.(true);
+      }
+    };
+    document.addEventListener('visibilitychange', refreshNow);
+    window.addEventListener('focus', refreshNow);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshNow);
+      window.removeEventListener('focus', refreshNow);
+    };
+  }, []);
 
   // Scroll to top on view change
   useEffect(() => {
