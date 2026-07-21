@@ -32,11 +32,17 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   const TIMEOUT_MS = 8_000;
   let lastError: Error | null = null;
 
+  // Vercel does not route multi-segment paths to the single catch-all function
+  // reliably, so send the sub-path as a query param (?path=a/b/c) which the
+  // handler reads via req.query.path. Single-path base keeps routing stable.
+  const sub = path.replace(/^\/+/, '').replace(/\/+$/, '');
+  const url = sub ? `${BASE}?path=${encodeURIComponent(sub)}` : BASE;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(`${BASE}${path}`, {
+      const res = await fetch(url, {
         method,
         headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -78,7 +84,7 @@ export const getChatReplies = () => req<ChatReply[]>('GET', '/chat-replies');
 export const postChatReply = (messageId: number | string, author: string, content: string) =>
   req<{ ok: boolean; reply: ChatReply }>('POST', '/chat-replies', { messageId, author, content });
 export const deleteChatReply = (id: number | string) =>
-  req<{ ok: boolean }>('DELETE', `/chat-replies/${id}`);
+  req<{ ok: boolean }>('POST', '/chat-replies', { action: 'delete', id });
 
 // Wellshop RSVPs (event RSVP / notify-me, live across profiles)
 export const getWellshopRsvps = () => req<WellshopRsvp[]>('GET', '/wellshop-rsvps');

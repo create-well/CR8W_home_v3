@@ -80,8 +80,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
   // Auth gate — health endpoint is public; everything else requires a valid token
+  const splitQp = (v: any): string[] => !v ? [] : Array.isArray(v) ? v.flatMap((s: string) => String(s).split('/')).filter(Boolean) : String(v).split('/').filter(Boolean);
   const segCheck = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
-  const qpCheck = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const qpCheck = splitQp(req.query.path);
   const firstSeg = (segCheck.length ? segCheck : qpCheck)[0] ?? '';
   if (firstSeg && firstSeg !== 'health') {
     if (!await verifyRequest(req)) { res.status(401).json({ error: 'Unauthorized' }); return; }
@@ -89,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // req.query.path is the catch-all: undefined | string | string[]
   const urlSegs = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
-  const qp = !req.query.path ? [] : Array.isArray(req.query.path) ? req.query.path : [req.query.path];
+  const qp = splitQp(req.query.path);
   const pathArr = urlSegs.length ? urlSegs : qp;
 
   const [resource = '', id = '', sub = ''] = pathArr;
@@ -320,17 +321,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
       if (method === 'POST' && !id) {
         const b = await readBody(req);
+        // Delete via single-segment POST { action:'delete', id } (multi-segment paths don't route)
+        if (b.action === 'delete') {
+          if (b.id == null) { res.status(400).json({ error: 'id required' }); return; }
+          const all = await getList(KEY);
+          await setList(KEY, all.filter((r: any) => String(r.id) !== String(b.id)));
+          res.json({ ok: true }); return;
+        }
         if (b.messageId == null || !b.author || !b.content) { res.status(400).json({ error: 'messageId, author, content required' }); return; }
         const all = await getList(KEY);
         const item = { id: b.id || Date.now(), messageId: b.messageId, author: b.author, content: b.content, ts: b.ts || new Date().toISOString() };
         all.push(item);
         await setList(KEY, all);
         res.json({ ok: true, reply: item }); return;
-      }
-      if (method === 'DELETE' && id) {
-        const all = await getList(KEY);
-        await setList(KEY, all.filter((r: any) => String(r.id) !== id));
-        res.json({ ok: true }); return;
       }
     }
 
