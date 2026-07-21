@@ -12,6 +12,7 @@ import { CoFlowD8sView } from './components/CoFlowD8sView';
 import { WelcomeModal, shouldShowOnboarding } from './components/WelcomeModal';
 import { DecomprocessFAB } from './components/DecomprocessFAB';
 import { PlaygroundView } from './components/PlaygroundView';
+import { LandingSignup } from './components/LandingSignup';
 import { ToastContainer } from './components/Toast';
 import { useThemeInit } from './components/ThemeProvider';
 import { AuthGate, isAuthenticated, getStoredProfile, signOut as authSignOut } from './components/AuthGate';
@@ -187,6 +188,7 @@ export default function App() {
   // ── Auth gate — renders before everything else ────────────────────────────
   const [authed, setAuthed] = useState(() => isAuthenticated());
   const [initialProfile] = useState(() => getStoredProfile() ?? 'monny');
+const [showLogin, setShowLogin] = useState(false);
 
   function handleAuthenticated(profileKey: string) {
     setAuthed(true);
@@ -778,7 +780,7 @@ export default function App() {
 
   // Show login gate until authenticated
   if (!authed) {
-    return <AuthGate onAuthenticated={handleAuthenticated} />;
+        return showLogin ? <AuthGate onAuthenticated={handleAuthenticated} /> : <LandingSignup onStaff={() => setShowLogin(true)} />;
   }
 
   return (
