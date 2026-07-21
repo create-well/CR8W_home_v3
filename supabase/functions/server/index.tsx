@@ -29,6 +29,9 @@ const SYNC_KEYS = [
   "cr8w_coflow_checkins",
   "cr8w_well_notes",
   "cr8w_calendar_events",
+  "cr8w_chat_reactions",
+  "cr8w_chat_replies",
+  "cr8w_wellshop_rsvps",
 ] as const;
 
 function parseList(raw: any): any[] {
@@ -94,6 +97,9 @@ app.get("/make-server-8dcd9693/sync", async (c) => {
       coflowCheckins: map["cr8w_coflow_checkins"] || [],
       wellNotes: map["cr8w_well_notes"] || [],
       calendarEvents: map["cr8w_calendar_events"] || [],
+      chatReactions: map["cr8w_chat_reactions"] || [],
+      chatReplies: map["cr8w_chat_replies"] || [],
+      wellshopRsvps: map["cr8w_wellshop_rsvps"] || [],
     });
   } catch (e) {
     console.log("Sync error:", e);
@@ -859,6 +865,94 @@ app.delete("/make-server-8dcd9693/parking-lot/:id", async (c) => {
     console.log("Parking lot DELETE error:", e);
     return c.json({ error: `Failed to delete parking lot item: ${e}` }, 500);
   }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CHAT REACTIONS (live across profiles) — list of { messageId, emoji, users[] }
+// ══════════════════════════════════════════════════════════════════════════════
+const CHAT_REACTIONS_KEY = "cr8w_chat_reactions";
+
+app.get("/make-server-8dcd9693/chat-reactions", async (c) => {
+  try { return c.json(await getList(CHAT_REACTIONS_KEY)); }
+  catch (e) { console.log("Chat reactions GET error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+// Toggle a reaction: body { messageId, emoji, user }. Adds if absent, removes if present.
+app.post("/make-server-8dcd9693/chat-reactions/toggle", async (c) => {
+  try {
+    const { messageId, emoji, user } = await c.req.json();
+    if (messageId == null || !emoji || !user) return c.json({ error: "messageId, emoji, user required" }, 400);
+    const all = await getList(CHAT_REACTIONS_KEY);
+    let row = all.find((r: any) => String(r.messageId) === String(messageId) && r.emoji === emoji);
+    if (!row) { row = { messageId, emoji, users: [] }; all.push(row); }
+    const idx = row.users.indexOf(user);
+    if (idx >= 0) row.users.splice(idx, 1); else row.users.push(user);
+    // prune empty reaction rows
+    const pruned = all.filter((r: any) => Array.isArray(r.users) && r.users.length > 0);
+    await setList(CHAT_REACTIONS_KEY, pruned);
+    return c.json({ ok: true, reactions: pruned });
+  } catch (e) { console.log("Chat reactions toggle error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CHAT REPLIES (threaded replies on chat messages) — { id, messageId, author, content, ts }
+// ══════════════════════════════════════════════════════════════════════════════
+const CHAT_REPLIES_KEY = "cr8w_chat_replies";
+
+app.get("/make-server-8dcd9693/chat-replies", async (c) => {
+  try { return c.json(await getList(CHAT_REPLIES_KEY)); }
+  catch (e) { console.log("Chat replies GET error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+app.post("/make-server-8dcd9693/chat-replies", async (c) => {
+  try {
+    const body = await c.req.json();
+    if (body.messageId == null || !body.author || !body.content) return c.json({ error: "messageId, author, content required" }, 400);
+    const all = await getList(CHAT_REPLIES_KEY);
+    const item = {
+      id: body.id || Date.now(),
+      messageId: body.messageId,
+      author: body.author,
+      content: body.content,
+      ts: body.ts || new Date().toISOString(),
+    };
+    all.push(item);
+    await setList(CHAT_REPLIES_KEY, all);
+    return c.json({ ok: true, reply: item });
+  } catch (e) { console.log("Chat replies POST error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+app.delete("/make-server-8dcd9693/chat-replies/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const all = await getList(CHAT_REPLIES_KEY);
+    await setList(CHAT_REPLIES_KEY, all.filter((r: any) => String(r.id) !== String(id)));
+    return c.json({ ok: true });
+  } catch (e) { console.log("Chat replies DELETE error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WELLSHOP RSVPS (event RSVPs / notify-me, live across profiles)
+// row: { catKey, user, status: 'rsvp'|'notify', ts }
+// ══════════════════════════════════════════════════════════════════════════════
+const WELLSHOP_RSVPS_KEY = "cr8w_wellshop_rsvps";
+
+app.get("/make-server-8dcd9693/wellshop-rsvps", async (c) => {
+  try { return c.json(await getList(WELLSHOP_RSVPS_KEY)); }
+  catch (e) { console.log("Wellshop RSVPs GET error:", e); return c.json({ error: `${e}` }, 500); }
+});
+
+// Upsert an RSVP: body { catKey, user, status }. status null/'none' removes it.
+app.post("/make-server-8dcd9693/wellshop-rsvps", async (c) => {
+  try {
+    const { catKey, user, status } = await c.req.json();
+    if (!catKey || !user) return c.json({ error: "catKey, user required" }, 400);
+    let all = await getList(WELLSHOP_RSVPS_KEY);
+    all = all.filter((r: any) => !(r.catKey === catKey && r.user === user));
+    if (status && status !== "none") all.push({ catKey, user, status, ts: new Date().toISOString() });
+    await setList(WELLSHOP_RSVPS_KEY, all);
+    return c.json({ ok: true, rsvps: all });
+  } catch (e) { console.log("Wellshop RSVPs POST error:", e); return c.json({ error: `${e}` }, 500); }
 });
 
 Deno.serve(app.fetch);

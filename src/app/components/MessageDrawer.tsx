@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import cwLogoImg from 'figma:asset/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
 import { PERSONS } from './data';
 import type { Message } from './api';
+import {
+  getChatReactions, toggleChatReaction,
+  getChatReplies, postChatReply,
+  type ChatReaction as KVReaction, type ChatReply as KVReply,
+} from './api';
 import { showToast } from './Toast';
 
 interface MessageDrawerProps {
@@ -65,7 +70,9 @@ const SENDER_COLORS: Record<string, string> = {
   bingle:   '#B8A9D4',
 };
 
-// ── localStorage-based reactions ─────────────────────────────────────────────
+// ── KV-backed reactions (live across profiles) ───────────────────────────────
+// Local cache mirror only; source of truth is the server. Kept so the UI
+// renders instantly on mount and survives a brief offline window.
 const LS_REACTIONS_KEY = 'cr8w_chat_reactions';
 
 function loadLocalReactions(): Record<number, Record<string, string[]>> {
@@ -78,9 +85,32 @@ function loadLocalReactions(): Record<number, Record<string, string[]>> {
 function saveLocalReactions(data: Record<number, Record<string, string[]>>) {
   try {
     localStorage.setItem(LS_REACTIONS_KEY, JSON.stringify(data));
-  } catch {
-    showToast('\u26A0\uFE0F couldn\u2019t save \u2014 try again', 'alert');
+  } catch { /* cache-only; server is source of truth */ }
+}
+
+// Server list rows -> nested map the UI uses: { [msgId]: { [emoji]: users[] } }
+function reactionsToMap(rows: KVReaction[]): Record<number, Record<string, string[]>> {
+  const map: Record<number, Record<string, string[]>> = {};
+  for (const r of rows || []) {
+    const mid = Number(r.messageId);
+    if (!map[mid]) map[mid] = {};
+    map[mid][r.emoji] = Array.isArray(r.users) ? r.users : [];
   }
+  return map;
+}
+
+// Server reply rows -> { [msgId]: ChatReply[] } sorted oldest-first
+function repliesToMap(rows: KVReply[]): Record<number, ChatReply[]> {
+  const map: Record<number, ChatReply[]> = {};
+  for (const r of rows || []) {
+    const mid = Number(r.messageId);
+    if (!map[mid]) map[mid] = [];
+    map[mid].push({ id: Number(r.id), author: r.author, content: r.content, ts: r.ts });
+  }
+  for (const k of Object.keys(map)) {
+    map[Number(k)].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  }
+  return map;
 }
 
 // ── Local reply threads ───────────────────────────────────────────────────────
@@ -209,6 +239,27 @@ export function MessageDrawer({
   useEffect(() => { saveIdSet(tappedKey, tappedIds); }, [tappedIds, tappedKey]);
   useEffect(() => { saveIdSet(dismissedKey, dismissedIds); }, [dismissedIds, dismissedKey]);
 
+  // ── LIVE SYNC: reactions + chat replies across all profiles ──
+  // Hydrate on mount, then poll while the drawer is open so teammates'
+  // reactions and replies appear without a manual refresh.
+  useEffect(() => {
+    let alive = true;
+    async function hydrateCollab() {
+      try {
+        const [reactions, replies] = await Promise.all([getChatReactions(), getChatReplies()]);
+        if (!alive) return;
+        const rMap = reactionsToMap(reactions);
+        setLocalReactions(rMap);
+        saveLocalReactions(rMap);
+        setChatReplies(repliesToMap(replies));
+      } catch { /* keep cached values on network hiccup */ }
+    }
+    hydrateCollab();
+    // Poll faster while open (chat is active), slower when closed.
+    const id = setInterval(hydrateCollab, open ? 12000 : 45000);
+    return () => { alive = false; clearInterval(id); };
+  }, [open]);
+
   // Mark user's own messages as read automatically
   useEffect(() => {
     const ownIds = messages.filter(m => m.author === activeAs).map(m => m.id);
@@ -305,10 +356,25 @@ export function MessageDrawer({
     const sendAuthor = quietMode ? 'a co-creator' : activeAs;
     try {
       if (replyToId !== null) {
-        const reply: ChatReply = { id: Date.now(), author: sendAuthor, content: text.trim(), ts: 'just now' };
-        setChatReplies(prev => ({ ...prev, [replyToId]: [...(prev[replyToId] || []), reply] }));
-        setOpenReplies(prev => new Set([...prev, replyToId]));
+        const targetId = replyToId;
+        const body = text.trim();
+        // Optimistic insert so the reply shows immediately.
+        const optimistic: ChatReply = { id: Date.now(), author: sendAuthor, content: body, ts: new Date().toISOString() };
+        setChatReplies(prev => ({ ...prev, [targetId]: [...(prev[targetId] || []), optimistic] }));
+        setOpenReplies(prev => new Set([...prev, targetId]));
         setReplyToId(null);
+        // Persist to server so every profile sees the reply live.
+        postChatReply(targetId, sendAuthor, body)
+          .then(res => {
+            const saved = res.reply;
+            setChatReplies(prev => {
+              const list = (prev[targetId] || []).map(r =>
+                r.id === optimistic.id ? { id: Number(saved.id), author: saved.author, content: saved.content, ts: saved.ts } : r,
+              );
+              return { ...prev, [targetId]: list };
+            });
+          })
+          .catch(() => showToast('\u26A0\uFE0F reply didn\u2019t sync \u2014 try again', 'alert'));
       } else {
         const msgPayload: Omit<Message, 'id' | 'created_at'> = {
           author: sendAuthor,
@@ -342,7 +408,9 @@ export function MessageDrawer({
     setMsgMenu(null);
   }
 
-  // ── Reaction toggle (localStorage) ──────────────────────────────────────────
+  // ── Reaction toggle (KV-backed, live across profiles) ────────────────────────
+  // Optimistic local update for instant feel, then reconcile with the server
+  // response so every profile converges on the same reaction state.
   function toggleReaction(msgId: number, emoji: string) {
     setLocalReactions(prev => {
       const next = { ...prev };
@@ -359,6 +427,14 @@ export function MessageDrawer({
     });
     setReactionPicker(null);
     setHoveredMsgId(null);
+    // Persist to server; reconcile from authoritative response.
+    toggleChatReaction(msgId, emoji, activeAs)
+      .then(res => {
+        const rMap = reactionsToMap(res.reactions);
+        setLocalReactions(rMap);
+        saveLocalReactions(rMap);
+      })
+      .catch(() => showToast('\u26A0\uFE0F reaction didn\u2019t sync \u2014 try again', 'alert'));
   }
 
   // ── Water-drop shortcut: copy to Notes from the Well ──────────────────────

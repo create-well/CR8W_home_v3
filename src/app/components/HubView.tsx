@@ -399,6 +399,71 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       .catch(e => { if (!(e instanceof TypeError)) console.error(e); setKvCalLoaded(true); });
   }, []);
 
+  // ── LIVE SYNC: wellshop RSVPs + next-session themes across all profiles ──
+  // Server rows { catKey, user, status } -> { [catKey]: { [user]: true } } for RSVP.
+  // Themes are shared text, synced via the generic settings KV key.
+  const WELLSHOP_NEXT_KEY = 'wellshop_next_desc';
+  const WELLSHOP_HISTORY_KEY = 'wellshop_history';
+  const PROFILE_HOLDING_KEY = 'profile_holding';
+  const profileHoldingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Write-through the full history map to shared settings KV after a local update.
+  function persistWellshopHistory(catKey: string, updated: WellshopHistoryEntry[]) {
+    setWellshopHistory(prev => {
+      const merged = { ...prev, [catKey]: updated };
+      try { localStorage.setItem(`wellshop_history_${catKey}`, JSON.stringify(updated)); } catch {}
+      api.setSetting(WELLSHOP_HISTORY_KEY, merged).catch(() => {});
+      return merged;
+    });
+  }
+  useEffect(() => {
+    let alive = true;
+    async function hydrateWellshop() {
+      try {
+        const [rows, themeWrap, histWrap] = await Promise.all([
+          api.getWellshopRsvps(),
+          api.getSetting<Record<string, string>>(WELLSHOP_NEXT_KEY).catch(() => ({ value: null })),
+          api.getSetting<Record<string, WellshopHistoryEntry[]>>(WELLSHOP_HISTORY_KEY).catch(() => ({ value: null })),
+        ]);
+        if (!alive) return;
+        const rsvpMap: Record<string, Record<string, boolean>> = { wellshop: {}, expresshop: {}, playshop: {} };
+        for (const r of rows || []) {
+          if (!rsvpMap[r.catKey]) rsvpMap[r.catKey] = {};
+          if (r.status === 'rsvp') rsvpMap[r.catKey][r.user] = true;
+        }
+        setWellshopRsvp(rsvpMap);
+        for (const k of Object.keys(rsvpMap)) {
+          try { localStorage.setItem(`wellshop_rsvp_${k}`, JSON.stringify(rsvpMap[k])); } catch {}
+        }
+        const theme = themeWrap?.value;
+        if (theme && typeof theme === 'object') {
+          setWellshopNextDesc(prev => ({ ...prev, ...theme }));
+          for (const [k, v] of Object.entries(theme)) {
+            try { localStorage.setItem(`wellshop_next_${k}`, v as string); } catch {}
+          }
+        }
+        const hist = histWrap?.value;
+        if (hist && typeof hist === 'object') {
+          setWellshopHistory(prev => ({ ...prev, ...hist }));
+          for (const [k, v] of Object.entries(hist)) {
+            try { localStorage.setItem(`wellshop_history_${k}`, JSON.stringify(v)); } catch {}
+          }
+        }
+        // "currently holding" per co-founder — shared team status.
+        const holdWrap = await api.getSetting<Record<string, string>>(PROFILE_HOLDING_KEY).catch(() => ({ value: null }));
+        const holding = holdWrap?.value;
+        if (alive && holding && typeof holding === 'object') {
+          setProfileHolding(prev => ({ ...prev, ...holding }));
+          for (const [k, v] of Object.entries(holding)) {
+            try { localStorage.setItem(`profile_holding_${k}`, v as string); } catch {}
+          }
+        }
+      } catch { /* keep cached values on network hiccup */ }
+    }
+    hydrateWellshop();
+    const id = setInterval(hydrateWellshop, 30000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
   async function syncIcalCalendar() {
     setIcalSyncing(true);
     setIcalSyncMsg('');
@@ -454,6 +519,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
     }
     return out;
   });
+  const wellshopThemeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wellshopShowHistory, setWellshopShowHistory] = useState<Record<string, boolean>>({});
   const [wellshopLogForm, setWellshopLogForm] = useState<string | null>(null);
   const [wellshopLogData, setWellshopLogData] = useState({ date: '', title: '', reflection: '' });
@@ -752,6 +818,11 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       const newLump = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text: dump.content, ts: Date.now() };
       pgData.brainLumps = [newLump, ...(pgData.brainLumps || [])];
       localStorage.setItem('cr8w_playground', JSON.stringify(pgData));
+      // Write-through to shared KV so the lump shows in every profile's Playground.
+      api.setSetting('playground_shared', {
+        glossary: pgData.glossary || [], brainLumps: pgData.brainLumps || [],
+        seeds: pgData.seeds || [], brandLab: pgData.brandLab || [],
+      }).catch(() => {});
       const next = new Set(sentToPlayground); next.add(dump.id);
       setSentToPlayground(next);
       localStorage.setItem('cr8w_dump_sent_pg', JSON.stringify([...next]));
@@ -1332,8 +1403,16 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                         value={wellshopNextDesc[cat.key] || ''}
                         onChange={e => {
                           const val = e.target.value;
-                          setWellshopNextDesc(prev => ({ ...prev, [cat.key]: val }));
-                          try { localStorage.setItem(`wellshop_next_${cat.key}`, val); } catch {}
+                          setWellshopNextDesc(prev => {
+                            const merged = { ...prev, [cat.key]: val };
+                            try { localStorage.setItem(`wellshop_next_${cat.key}`, val); } catch {}
+                            // Debounced write-through to shared settings KV.
+                            if (wellshopThemeTimer.current) clearTimeout(wellshopThemeTimer.current);
+                            wellshopThemeTimer.current = setTimeout(() => {
+                              api.setSetting(WELLSHOP_NEXT_KEY, merged).catch(() => {});
+                            }, 700);
+                            return merged;
+                          });
                         }}
                         style={{
                           width: '100%', border: '1px solid var(--border-soft)', borderRadius: 8,
@@ -1350,9 +1429,12 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                             <button
                               key={p.key}
                               onClick={() => {
-                                const next = { ...rsvpData, [p.key]: !attending };
+                                const nowAttending = !attending;
+                                const next = { ...rsvpData, [p.key]: nowAttending };
                                 setWellshopRsvp(prev => ({ ...prev, [cat.key]: next }));
                                 try { localStorage.setItem(`wellshop_rsvp_${cat.key}`, JSON.stringify(next)); } catch {}
+                                // Persist to server so RSVPs are live across profiles.
+                                api.setWellshopRsvp(cat.key, p.key, nowAttending ? 'rsvp' : 'none').catch(() => {});
                               }}
                               title={`${p.key} — ${attending ? 'attending' : 'not attending'}`}
                               style={{
@@ -1518,8 +1600,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                                 reflection: wellshopLogData.reflection.trim(),
                               };
                               const updated = [entry, ...historyEntries];
-                              setWellshopHistory(prev => ({ ...prev, [cat.key]: updated }));
-                              try { localStorage.setItem(`wellshop_history_${cat.key}`, JSON.stringify(updated)); } catch {}
+                              persistWellshopHistory(cat.key, updated);
                               setWellshopLogForm(null);
                               setWellshopLogData({ date: '', title: '', reflection: '' });
                               showToast(`\u{1F4DA} session logged to ${cat.title}`);
@@ -1558,8 +1639,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                                 <button
                                   onClick={() => {
                                     const updated = historyEntries.filter(e => e.id !== entry.id);
-                                    setWellshopHistory(prev => ({ ...prev, [cat.key]: updated }));
-                                    try { localStorage.setItem(`wellshop_history_${cat.key}`, JSON.stringify(updated)); } catch {}
+                                    persistWellshopHistory(cat.key, updated);
                                   }}
                                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.62rem', opacity: 0.4, padding: '2px' }}
                                   title="delete entry"
@@ -2146,8 +2226,16 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                           placeholder="what are you holding this week?"
                           onChange={e => {
                             const val = e.target.value;
-                            setProfileHolding(prev => ({ ...prev, [key]: val }));
-                            try { localStorage.setItem(`profile_holding_${key}`, val); } catch {}
+                            setProfileHolding(prev => {
+                              const merged = { ...prev, [key]: val };
+                              try { localStorage.setItem(`profile_holding_${key}`, val); } catch {}
+                              // Debounced write-through to shared settings KV (live across profiles).
+                              if (profileHoldingTimer.current) clearTimeout(profileHoldingTimer.current);
+                              profileHoldingTimer.current = setTimeout(() => {
+                                api.setSetting(PROFILE_HOLDING_KEY, merged).catch(() => {});
+                              }, 700);
+                              return merged;
+                            });
                           }}
                           style={{
                             width: '100%', border: '1px solid var(--border-soft, #e0dcd7)',

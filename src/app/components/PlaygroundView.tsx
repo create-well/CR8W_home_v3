@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronDown, Plus, Search, X, Sparkles, Brain, Sprout, Palette, ParkingCircle, Trash2, Zap, HelpCircle, BookOpen, Shuffle } from 'lucide-react';
 import { showToast } from './Toast';
 import * as api from './api';
@@ -20,6 +20,9 @@ interface PlaygroundData {
 }
 
 const LS_KEY = 'cr8w_playground';
+// Shared-across-profiles KV key. Holds glossary/brainLumps/seeds/brandLab.
+// (parking is synced separately via the parking-lot route.)
+const PLAYGROUND_KV_KEY = 'playground_shared';
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const DEFAULT_GLOSSARY: GlossaryTerm[] = [
@@ -187,12 +190,49 @@ export function PlaygroundView() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [brandTab, setBrandTab] = useState<'voice' | 'visual'>('voice');
 
+  const kvWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Debounced write-through of the shared sections to KV.
+  const pushShared = useCallback((d: PlaygroundData) => {
+    if (kvWriteTimer.current) clearTimeout(kvWriteTimer.current);
+    kvWriteTimer.current = setTimeout(() => {
+      const { glossary, brainLumps, seeds, brandLab } = d;
+      api.setSetting(PLAYGROUND_KV_KEY, { glossary, brainLumps, seeds, brandLab }).catch(() => {});
+    }, 800);
+  }, []);
+
   const persist = useCallback((updater: (prev: PlaygroundData) => PlaygroundData) => {
     setData(prev => {
       const next = updater(prev);
       saveData(next);
+      pushShared(next);
       return next;
     });
+  }, [pushShared]);
+
+  // ── LIVE SYNC: hydrate shared playground sections from KV, then poll ──
+  useEffect(() => {
+    let alive = true;
+    async function hydrateShared() {
+      try {
+        const wrap = await api.getSetting<Partial<PlaygroundData>>(PLAYGROUND_KV_KEY);
+        const remote = wrap?.value;
+        if (!alive || !remote || typeof remote !== 'object') return;
+        setData(prev => {
+          const merged: PlaygroundData = {
+            ...prev,
+            glossary: Array.isArray(remote.glossary) ? remote.glossary : prev.glossary,
+            brainLumps: Array.isArray(remote.brainLumps) ? remote.brainLumps : prev.brainLumps,
+            seeds: Array.isArray(remote.seeds) ? remote.seeds : prev.seeds,
+            brandLab: Array.isArray(remote.brandLab) ? remote.brandLab : prev.brandLab,
+          };
+          saveData(merged);
+          return merged;
+        });
+      } catch { /* keep local on network hiccup */ }
+    }
+    hydrateShared();
+    const id = setInterval(hydrateShared, 30000);
+    return () => { alive = false; clearInterval(id); };
   }, []);
 
   const toggle = (key: string) => setOpenSections(s => ({ ...s, [key]: !s[key] }));

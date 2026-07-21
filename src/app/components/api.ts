@@ -68,6 +68,23 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 // Sync
 export const sync = () => req<SyncData>('GET', '/sync');
 
+// Chat reactions (live across profiles)
+export const getChatReactions = () => req<ChatReaction[]>('GET', '/chat-reactions');
+export const toggleChatReaction = (messageId: number | string, emoji: string, user: string) =>
+  req<{ ok: boolean; reactions: ChatReaction[] }>('POST', '/chat-reactions/toggle', { messageId, emoji, user });
+
+// Chat replies (threaded replies on chat messages)
+export const getChatReplies = () => req<ChatReply[]>('GET', '/chat-replies');
+export const postChatReply = (messageId: number | string, author: string, content: string) =>
+  req<{ ok: boolean; reply: ChatReply }>('POST', '/chat-replies', { messageId, author, content });
+export const deleteChatReply = (id: number | string) =>
+  req<{ ok: boolean }>('DELETE', `/chat-replies/${id}`);
+
+// Wellshop RSVPs (event RSVP / notify-me, live across profiles)
+export const getWellshopRsvps = () => req<WellshopRsvp[]>('GET', '/wellshop-rsvps');
+export const setWellshopRsvp = (catKey: string, user: string, status: 'rsvp' | 'notify' | 'none') =>
+  req<{ ok: boolean; rsvps: WellshopRsvp[] }>('POST', '/wellshop-rsvps', { catKey, user, status });
+
 // Tasks
 export const getTasks = () => req<Task[]>('GET', '/tasks');
 export const createTask = (t: Omit<Task, 'id' | 'created_at'>) => req<Task>('POST', '/tasks', t);
@@ -303,7 +320,15 @@ export interface SyncData {
   coflowCheckins: CoFlowCheckin[];
   wellNotes: WellNote[];
   calendarEvents: CalendarEventKV[];
+  chatReactions: ChatReaction[];
+  chatReplies: ChatReply[];
+  wellshopRsvps: WellshopRsvp[];
 }
+
+// Live-sync collaborative types
+export interface ChatReaction { messageId: number | string; emoji: string; users: string[]; }
+export interface ChatReply { id: number | string; messageId: number | string; author: string; content: string; ts: string; }
+export interface WellshopRsvp { catKey: string; user: string; status: 'rsvp' | 'notify'; ts: string; }
 
 export interface CalendarEventKV {
   id: string;
