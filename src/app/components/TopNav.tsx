@@ -217,6 +217,25 @@ export function TopNav({ currentView, onNavigate, syncStatus, onSignOut, activeU
           })()}
         </div>
 
+        {/* Desktop session indicator */}
+        {activeUser && (
+          <span
+            className="nav-signedin-desktop"
+            title={`Signed in as ${activeUser}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              marginLeft: 10, padding: '5px 10px', borderRadius: 8,
+              background: 'var(--surface-soft, rgba(196,164,132,0.08))',
+              border: '1px solid var(--border-soft, rgba(196,164,132,0.2))',
+              fontFamily: 'var(--font-label, sans-serif)', fontSize: '0.62rem', fontWeight: 600,
+              color: 'var(--text-muted, #6B5F7A)', textTransform: 'lowercase', flexShrink: 0, whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#5F9E6B', flexShrink: 0 }} />
+            {activeUser}
+          </span>
+        )}
+
         {/* Desktop sign-out */}
         {onSignOut && (
           <button
