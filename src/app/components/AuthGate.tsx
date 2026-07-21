@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient, type SupabaseClient, type Session } from '@supabase/supabase-js';
 import cwLogoImg from 'figma:asset/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
+import { getSetting, setSetting } from './api';
 
 // ── Supabase browser client (inline config — publishable key is public-safe) ──
 const SUPABASE_URL = 'https://axntibrdivccycxdwlzk.supabase.co';
@@ -62,28 +63,65 @@ export async function signOut(): Promise<void> {
 
 // ── Per-UID profile registry (bridges Supabase Auth users into PERSONS) ──────
 // New registrants get a distinct profile key `user_<uid>` so they never
-// share or overwrite an existing founder's profile. Mirrored to localStorage
-// so the dashboard's PERSONS lookup resolves them to their own identity.
+// share or overwrite an existing founder's profile.
+//
+// Storage model (v3): the shared profile map is the source of truth in the KV
+// backend under settings key `personal_profiles`. localStorage is kept as a
+// synchronous cache so initial render stays instant and offline still works.
+// Writes go write-through (local cache first, then KV). On login we hydrate
+// the cache from KV so a profile created on one device shows up on another.
+
 export interface PersonalProfile {
   name: string;
   role: string;              // picker selection (sunshine|monny|bingle|omar|event-support)
   selectedFromPicker: string;
 }
-export function registerPersonalProfile(profileKey: string, p: PersonalProfile): void {
+
+const PERSONAL_PROFILES_LOCAL_KEY = 'cr8w_personal_profiles';
+const PERSONAL_PROFILES_KV_KEY = 'personal_profiles';
+type ProfileMap = Record<string, PersonalProfile & { updatedAt?: string }>;
+
+function readLocalMap(): ProfileMap {
   try {
-    const raw = localStorage.getItem('cr8w_personal_profiles');
-    const map = raw ? JSON.parse(raw) : {};
-    map[profileKey] = { ...p, updatedAt: new Date().toISOString() };
-    localStorage.setItem('cr8w_personal_profiles', JSON.stringify(map));
-  } catch {}
+    const raw = localStorage.getItem(PERSONAL_PROFILES_LOCAL_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
 }
+function writeLocalMap(map: ProfileMap): void {
+  try { localStorage.setItem(PERSONAL_PROFILES_LOCAL_KEY, JSON.stringify(map)); } catch {}
+}
+
+export function registerPersonalProfile(profileKey: string, p: PersonalProfile): void {
+  // 1) write-through to the synchronous local cache (keeps render instant)
+  const map = readLocalMap();
+  map[profileKey] = { ...p, updatedAt: new Date().toISOString() };
+  writeLocalMap(map);
+  // 2) persist the merged map to shared KV so it survives across devices.
+  //    Fire-and-forget: never block the UI on the network. On failure the
+  //    local cache still holds the value and the next hydrate will reconcile.
+  setSetting<ProfileMap>(PERSONAL_PROFILES_KV_KEY, map).catch(() => {});
+}
+
 export function getPersonalProfile(profileKey: string): PersonalProfile | null {
+  const map = readLocalMap();
+  return map[profileKey] ?? null;
+}
+
+// Pull the shared profile map from KV into the local cache. Call after login.
+// Merges by newest updatedAt so a stale local entry never clobbers a remote one.
+export async function hydratePersonalProfiles(): Promise<void> {
   try {
-    const raw = localStorage.getItem('cr8w_personal_profiles');
-    if (!raw) return null;
-    const map = JSON.parse(raw);
-    return map[profileKey] ?? null;
-  } catch { return null; }
+    const res = await getSetting<ProfileMap>(PERSONAL_PROFILES_KV_KEY);
+    const remote = res?.value;
+    if (!remote || typeof remote !== 'object') return;
+    const local = readLocalMap();
+    const merged: ProfileMap = { ...local };
+    for (const [k, rv] of Object.entries(remote)) {
+      const lv = merged[k];
+      if (!lv || (rv?.updatedAt ?? '') >= (lv?.updatedAt ?? '')) merged[k] = rv;
+    }
+    writeLocalMap(merged);
+  } catch { /* offline / first run — local cache stands */ }
 }
 
 // — Email → profile mapping (each team member gets their own profile by login email)
@@ -173,6 +211,9 @@ export function AuthGate({ onAuthenticated }: Props) {
       triggerShake();
       return;
     }
+    // Pull the shared personal-profile map from KV into the local cache so a
+    // profile created on another device resolves here (name/emoji/color).
+    await hydratePersonalProfiles();
     // Precedence: personal per-UID profile (metadata) → email→team map → 'omar'
     const key = data.user?.user_metadata?.cr8w_profile ?? emailToProfile(data.user?.email) ?? 'omar';
     localStorage.setItem('cr8w_user_profile', key);
