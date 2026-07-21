@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&display=swap');
+
 /* ============================================
    CR8W Create Well Dashboard v3 — Styles
    Soft luxury · Creative sanctuary · Warm organic
@@ -11,6 +13,13 @@
     --deep-rust: #7BA89D;
     --camel-sun: #D4A771;
     --sandstone: #EAE3DB;
+
+    /* Landing-Brand Alignment (additive, cr8w.com website) */
+    --brand-rust: #C25B3B;      /* landing primary accent / CTA */
+    --brand-rust-deep: #6B4226; /* landing 'med' brown */
+    --brand-ink: #2C1810;       /* landing 'dark' */
+    --brand-cream: #FFFDF9;     /* landing 'white' */
+    --font-brand-display: 'Playfair Display', Georgia, serif; /* dashboard top-level titles + wordmark */
 
     /* Person Colors */
     --sunshine: #D4A5A5;
