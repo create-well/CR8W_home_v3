@@ -5,7 +5,7 @@ import { VisibilityDial } from './VisibilityDial';
 import { SensorySettings } from './SensorySettings';
 import { ThemeSelector } from './ThemeSelector';
 
-type View = 'hub' | 'geyser' | 'workshops' | 'coflow' | 'playground' | 'sunshine' | 'monny' | 'bingle';
+type View = 'hub' | 'geyser' | 'workshops' | 'coflow' | 'playground' | 'sunshine' | 'monny' | 'bingle' | 'omar';
 
 const NAV_ITEMS: { key: View; label: string; emoji: string }[] = [
   { key: 'hub',        label: 'the well',   emoji: '💧' },

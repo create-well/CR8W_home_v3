@@ -70,6 +70,15 @@ export const WELLSHEET_PROMPTS: Record<string, string[]> = {
     "What clarity arrived during your rest time?",
     "Who in your network needs connecting today?",
     "What needs your external expression gift?"
+  ],
+  omar: [
+    "What are you curious about in the space today?",
+    "What feels fresh or new as you settle in?",
+    "What's one thing you'd love to explore this week?",
+    "Where is your intuition pointing right now?",
+    "What would make today feel like a win?",
+    "Who do you want to connect with in the collective?",
+    "What's a question you're sitting with?"
   ]
 };
 

@@ -216,7 +216,7 @@ export function PersonView({
 
   const sparkTitle = person === 'sunshine' ? '💡 Sparked Ideas' : person === 'monny' ? '💡 Sacral Downloads' : '💡 Distilled Insights';
   const hdRoleLine = hd ? `${p.name} · ${hd.type} ${hd.profile} · ${hd.authority} Authority` : `${p.name} · ${p.role}`;
-  const flowReminder = firstSentence(p.energyReminder.text);
+  const flowReminder = p.energyReminder?.text ? firstSentence(p.energyReminder.text) : '';
 
   // Action items filtered
   let filteredItems = personItems;
@@ -246,9 +246,11 @@ export function PersonView({
         </div>
 
         {/* HD Flow reminder — one line */}
-        <div className="flow-hd-reminder">
-          {flowReminder}
-        </div>
+        {flowReminder && (
+          <div className="flow-hd-reminder">
+            {flowReminder}
+          </div>
+        )}
 
         {/* Due Soon + Clarity Queue counts */}
         <div className="flow-counts-row">
@@ -448,7 +450,31 @@ export function PersonView({
 
   // ── DEPTH TAB ─────────────────────────────────────────
   function renderDepth() {
-    if (!hd) return <div className="person-tab-content"><p>No HD data available.</p></div>;
+    if (!hd) {
+      return (
+        <div className="person-tab-content">
+          <div className="hd-daily-prompt">
+            <span className="hd-daily-icon">🌱</span>
+            <div>
+              <div className="hd-daily-label">Welcome to your Well, {p.name}</div>
+              <div className="hd-daily-text">Your Human Design chart isn't set up here yet. Once it's added, this tab fills with your type, strategy, authority, and daily prompts made just for you.</div>
+            </div>
+          </div>
+          <div className="hd-overview-card" style={{ borderTop: `3px solid ${p.color}` }}>
+            <div className="hd-overview-header">
+              <div className="hd-overview-type">{p.emoji} {p.name}</div>
+              <div className="hd-overview-profile">{p.role}</div>
+            </div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: '4px 0 0' }}>
+              You're a fresh set of eyes in the collective. Explore the Flow and Work tabs to get grounded, capture sparks, and see what's coming up. No chart required to start contributing.
+            </p>
+          </div>
+          <div className="hd-calc-note" style={{ marginTop: '16px' }}>
+            Curious about your own design? Try the HD Type Finder on any charted member's Depth tab, or visit <a href="https://www.mybodygraph.com" target="_blank" rel="noopener noreferrer">mybodygraph.com</a> for a full reading, then share it with Monny to add here.
+          </div>
+        </div>
+      );
+    }
 
     const sections = [
       { id: 'type', icon: '⚡', title: `About ${hd.type}s`, content: hd.typeDescription },

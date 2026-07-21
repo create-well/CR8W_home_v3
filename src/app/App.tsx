@@ -4,6 +4,7 @@ import { TopNav } from './components/TopNav';
 import { HubView } from './components/HubView';
 import { GeyserView } from './components/GeyserView';
 import { PersonView } from './components/PersonView';
+import { PersonViewBoundary } from './components/PersonViewBoundary';
 import { AddTaskModal } from './components/AddTaskModal';
 import { MessageDrawer } from './components/MessageDrawer';
 import { WorkshopsView } from './components/WorkshopsView';
@@ -18,6 +19,7 @@ import {
   DEFAULT_ANNOUNCEMENTS,
   STATIONS_DEFAULT,
   GCAL_CLIENT_ID,
+  PERSONS,
 } from './components/data';
 import * as api from './components/api';
 import type { Task, Station, ForumPost, Message, BrainDump, Announcement, ForumReply } from './components/api';
@@ -102,9 +104,9 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
   }
 })();
 
-type View = 'hub' | 'geyser' | 'workshops' | 'coflow' | 'playground' | 'sunshine' | 'monny' | 'bingle';
+type View = 'hub' | 'geyser' | 'workshops' | 'coflow' | 'playground' | 'sunshine' | 'monny' | 'bingle' | 'omar';
 type GeyserTab = 'overview' | 'stations' | 'forum';
-const PERSON_VIEWS: View[] = ['sunshine', 'monny', 'bingle'];
+const PERSON_VIEWS: View[] = ['sunshine', 'monny', 'bingle', 'omar'];
 
 const DEFAULT_STATIONS_MAPPED: Station[] = STATIONS_DEFAULT.map(s => ({
   ...s,
@@ -942,19 +944,20 @@ export default function App() {
         )}
 
         {dataLoaded && PERSON_VIEWS.includes(currentView) && (
-          <PersonView
-            key={currentView}
-            person={currentView}
-            onNavigate={navigate}
-            actionItems={actionItems}
-            momentumItems={momentumItems}
-            wellNotes={forumNotesForPerson}
-            stations={stations}
-            onAddTask={() => setShowAddTaskModal(true)}
-            onUpdateTaskStatus={updateTaskStatus}
-            onAddMomentum={addMomentum}
-            onAddNote={addNote}
-          />
+          <PersonViewBoundary key={currentView} personName={PERSONS[currentView]?.name} onNavigate={navigate}>
+            <PersonView
+              person={currentView}
+              onNavigate={navigate}
+              actionItems={actionItems}
+              momentumItems={momentumItems}
+              wellNotes={forumNotesForPerson}
+              stations={stations}
+              onAddTask={() => setShowAddTaskModal(true)}
+              onUpdateTaskStatus={updateTaskStatus}
+              onAddMomentum={addMomentum}
+              onAddNote={addNote}
+            />
+          </PersonViewBoundary>
         )}
       </main>
 
