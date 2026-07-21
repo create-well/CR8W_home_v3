@@ -108,6 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'cr8w_braindumps','cr8w_announcements','cr8w_forum_replies',
         'cr8w_workshops','cr8w_workshop_programs','cr8w_workshop_resources',
         'cr8w_coflow_dates','cr8w_coflow_checkins','cr8w_well_notes','cr8w_calendar_events',
+        'cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps',
       ];
       const { data, error } = await sb().from(TABLE).select('key,value').in('key', KEYS);
       if (error) { res.status(500).json({ error: error.message }); return; }
@@ -121,6 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         workshopPrograms: m['cr8w_workshop_programs']??[], workshopResources: m['cr8w_workshop_resources']??[],
         coflowDates: m['cr8w_coflow_dates']??[], coflowCheckins: m['cr8w_coflow_checkins']??[],
         wellNotes: m['cr8w_well_notes']??[], calendarEvents: m['cr8w_calendar_events']??[],
+        chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[],
+        wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
       });
       return;
     }
@@ -286,6 +289,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (td.error) { res.status(400).json({ error: td.error, error_description: td.error_description }); return; }
       res.json({ access_token: td.access_token, refresh_token: td.refresh_token, expires_in: td.expires_in, token_type: td.token_type, scope: td.scope });
       return;
+    }
+
+    // ── Chat reactions (live across profiles) ─────────────────────────────────
+    // GET  /chat-reactions          → list of { messageId, emoji, users[] }
+    // POST /chat-reactions/toggle   → body { messageId, emoji, user } toggles user
+    if (resource === 'chat-reactions') {
+      const KEY = 'cr8w_chat_reactions';
+      if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
+      if (method === 'POST' && id === 'toggle') {
+        const { messageId, emoji, user } = await readBody(req);
+        if (messageId == null || !emoji || !user) { res.status(400).json({ error: 'messageId, emoji, user required' }); return; }
+        const all = await getList(KEY);
+        let row = all.find((r: any) => String(r.messageId) === String(messageId) && r.emoji === emoji);
+        if (!row) { row = { messageId, emoji, users: [] }; all.push(row); }
+        const ui = row.users.indexOf(user);
+        if (ui >= 0) row.users.splice(ui, 1); else row.users.push(user);
+        const pruned = all.filter((r: any) => Array.isArray(r.users) && r.users.length > 0);
+        await setList(KEY, pruned);
+        res.json({ ok: true, reactions: pruned }); return;
+      }
+    }
+
+    // ── Chat replies (threaded replies on chat messages) ──────────────────────
+    // GET  /chat-replies       → all replies { id, messageId, author, content, ts }
+    // POST /chat-replies       → body { messageId, author, content }
+    // DELETE /chat-replies/:id
+    if (resource === 'chat-replies') {
+      const KEY = 'cr8w_chat_replies';
+      if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
+      if (method === 'POST' && !id) {
+        const b = await readBody(req);
+        if (b.messageId == null || !b.author || !b.content) { res.status(400).json({ error: 'messageId, author, content required' }); return; }
+        const all = await getList(KEY);
+        const item = { id: b.id || Date.now(), messageId: b.messageId, author: b.author, content: b.content, ts: b.ts || new Date().toISOString() };
+        all.push(item);
+        await setList(KEY, all);
+        res.json({ ok: true, reply: item }); return;
+      }
+      if (method === 'DELETE' && id) {
+        const all = await getList(KEY);
+        await setList(KEY, all.filter((r: any) => String(r.id) !== id));
+        res.json({ ok: true }); return;
+      }
+    }
+
+    // ── Wellshop RSVPs (live across profiles) ─────────────────────────────────
+    // GET  /wellshop-rsvps   → list of { catKey, user, status, ts }
+    // POST /wellshop-rsvps   → body { catKey, user, status }; status 'none' removes
+    if (resource === 'wellshop-rsvps') {
+      const KEY = 'cr8w_wellshop_rsvps';
+      if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
+      if (method === 'POST' && !id) {
+        const { catKey, user, status } = await readBody(req);
+        if (!catKey || !user) { res.status(400).json({ error: 'catKey, user required' }); return; }
+        let all = await getList(KEY);
+        all = all.filter((r: any) => !(r.catKey === catKey && r.user === user));
+        if (status && status !== 'none') all.push({ catKey, user, status, ts: new Date().toISOString() });
+        await setList(KEY, all);
+        res.json({ ok: true, rsvps: all }); return;
+      }
     }
 
     // ── Generic list CRUD ─────────────────────────────────────────────────────
