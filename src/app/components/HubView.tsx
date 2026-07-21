@@ -474,7 +474,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           return (h.endsWith('.vercel.app') || h === 'createwell.monnyfest.co' || h === 'cr8w.com' || h === 'www.cr8w.com' || h === 'localhost' || h === '127.0.0.1')
             ? '/api/server' : 'https://cr8w-home-v2.vercel.app/api/server';
         })();
-      const res = await fetch(`${apiBase}/calendar-ical-sync`, {
+      const res = await fetch(`${apiBase}?path=calendar-ical-sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer sb_publishable_KKMWtvpxkSGaq-xmie6viQ_pRzAb_4i` },
       });
