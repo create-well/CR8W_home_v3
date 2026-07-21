@@ -25,6 +25,16 @@ const BASE = resolveApiBase();
 // Auth header: required by Supabase edge function; Vercel routes ignore it.
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` };
 
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); this.name = 'ApiError'; }
+}
+function friendlyMessage(status: number): string {
+  if (status === 401 || status === 403) return 'Please sign in again to sync.';
+  if (status === 429) return 'Syncing too often — try again shortly.';
+  if (status >= 500) return "The calendar service is having a moment. We'll keep retrying.";
+  return "Couldn't sync right now. Please try again.";
+}
+
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   // One retry for GETs on network-level failures only; mutations fail fast.
   const maxRetries = method === 'GET' ? 1 : 0;
@@ -48,11 +58,18 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${method} ${path} → ${res.status}: ${text}`);
+      const raw = await res.text();
+    const looksJson = (res.headers.get('content-type') ?? '').includes('application/json')
+      || raw.trimStart().startsWith('{') || raw.trimStart().startsWith('[');
+    if (!res.ok) {
+        console.error(`[api] ${method} ${path} → ${res.status}`, raw.slice(0, 500));
+        throw new ApiError(res.status, friendlyMessage(res.status));
       }
-      return res.json();
+          if (!looksJson) {
+      console.error(`[api] ${method} ${path} → non-JSON response`, raw.slice(0, 500));
+      throw new ApiError(res.status, "We couldn't reach the server just now. Please retry in a moment.");
+    }
+    return JSON.parse(raw) as T;
     } catch (e: any) {
       lastError = e;
       if (e?.name === 'AbortError') {
