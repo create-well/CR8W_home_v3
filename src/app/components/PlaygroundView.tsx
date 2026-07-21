@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ChevronDown, Plus, Search, X, Sparkles, Brain, Sprout, Palette, ParkingCircle, Trash2, Zap, HelpCircle, BookOpen, Shuffle } from 'lucide-react';
+import { ChevronDown, Plus, Search, X, Sparkles, Brain, Sprout, Palette, ParkingCircle, Trash2, Zap, HelpCircle, BookOpen, Shuffle, Mail, Download } from 'lucide-react';
 import { showToast } from './Toast';
 import * as api from './api';
-import type { ParkingLotItem } from './api';
+import type { ParkingLotItem, Signup } from './api';
 
 /* ─── Types ─────────────────────────────────────────────────── */
 interface GlossaryTerm { id: string; word: string; definition: string; ts: number; }
@@ -189,6 +189,7 @@ export function PlaygroundView() {
   const [search, setSearch] = useState('');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [brandTab, setBrandTab] = useState<'voice' | 'visual'>('voice');
+  const [signups, setSignups] = useState<Signup[]>([]);
 
   const kvWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Debounced write-through of the shared sections to KV.
@@ -233,6 +234,46 @@ export function PlaygroundView() {
     hydrateShared();
     const id = setInterval(hydrateShared, 30000);
     return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  // ── LIVE SYNC: hydrate landing-page email signups from KV, then poll ──
+  useEffect(() => {
+    let alive = true;
+    async function hydrateSignups() {
+      try {
+        const list = await api.getSignups();
+        if (alive && Array.isArray(list)) setSignups(list);
+      } catch { /* keep last-known on network hiccup */ }
+    }
+    hydrateSignups();
+    const id = setInterval(hydrateSignups, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  const exportSignupsCsv = useCallback(() => {
+    if (!signups.length) { showToast('No signups to export yet.', 'alert'); return; }
+    const esc = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['email', 'name', 'source', 'created_at']];
+    signups
+      .slice()
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+      .forEach(s => rows.push([s.email, s.name || '', s.source || '', s.created_at]));
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `create-well-signups-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${signups.length} signup${signups.length === 1 ? '' : 's'}.`, 'success');
+  }, [signups]);
+
+  const removeSignup = useCallback(async (id: Signup['id']) => {
+    setSignups(prev => prev.filter(s => s.id !== id));
+    try { await api.deleteSignup(id); } catch { /* optimistic; next poll reconciles */ }
   }, []);
 
   const toggle = (key: string) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
@@ -753,6 +794,74 @@ export function PlaygroundView() {
               brandLab: [...d.brandLab, { id: uid(), text: vals.text || '', tab: brandTab, ts: Date.now() }],
             }))}
           />
+        </Section>
+
+        {/* Signups — landing-page email capture */}
+        <Section
+          title="signups"
+          icon={<Mail size={20} color="#C08552" />}
+          barColor="#C08552"
+          open={!!openSections.signups}
+          onToggle={() => toggle('signups')}
+          count={signups.length}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Emails captured from the landing page. New signups appear here automatically.
+            </span>
+            <button
+              onClick={exportSignupsCsv}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontFamily: 'var(--font-label)', fontSize: '0.72rem', fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                padding: '7px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: '#C08552', color: '#fff', flexShrink: 0,
+              }}
+            >
+              <Download size={14} /> Export CSV
+            </button>
+          </div>
+          {signups.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '14px 0', color: 'var(--text-muted)', fontSize: '0.84rem', fontStyle: 'italic' }}>
+              No signups yet. When someone joins from the landing page, they show up here.
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {signups
+              .slice()
+              .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+              .map(s => (
+                <div key={s.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 14px', background: 'var(--bg-warm)', borderRadius: 8,
+                  border: '1px solid var(--border-soft)',
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.86rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.email}
+                    </div>
+                    {(s.name || s.source) && (
+                      <div style={{ fontFamily: 'var(--font-label)', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        {[s.name, s.source].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.66rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                  <button
+                    onClick={() => removeSignup(s.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, opacity: 0.4, flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}
+                    title="Remove signup"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+          </div>
         </Section>
       </div>
 

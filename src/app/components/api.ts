@@ -91,6 +91,13 @@ export const getWellshopRsvps = () => req<WellshopRsvp[]>('GET', '/wellshop-rsvp
 export const setWellshopRsvp = (catKey: string, user: string, status: 'rsvp' | 'notify' | 'none') =>
   req<{ ok: boolean; rsvps: WellshopRsvp[] }>('POST', '/wellshop-rsvps', { catKey, user, status });
 
+// Signups (landing-page email capture; list is auth-gated, POST is public)
+export const getSignups = () => req<Signup[]>('GET', '/signups');
+export const addSignup = (email: string, name?: string, source?: string) =>
+  req<{ ok: boolean; email?: string; deduped?: boolean }>('POST', '/signups', { email, name, source });
+export const deleteSignup = (id: number | string) =>
+  req<{ ok: boolean }>('DELETE', `/signups/${id}`);
+
 // Tasks
 export const getTasks = () => req<Task[]>('GET', '/tasks');
 export const createTask = (t: Omit<Task, 'id' | 'created_at'>) => req<Task>('POST', '/tasks', t);
@@ -335,6 +342,7 @@ export interface SyncData {
 export interface ChatReaction { messageId: number | string; emoji: string; users: string[]; }
 export interface ChatReply { id: number | string; messageId: number | string; author: string; content: string; ts: string; }
 export interface WellshopRsvp { catKey: string; user: string; status: 'rsvp' | 'notify'; ts: string; }
+export interface Signup { id: number | string; email: string; name?: string; source?: string; created_at: string; }
 
 export interface CalendarEventKV {
   id: string;

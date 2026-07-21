@@ -84,7 +84,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const segCheck = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
   const qpCheck = splitQp(req.query.path);
   const firstSeg = (segCheck.length ? segCheck : qpCheck)[0] ?? '';
-  if (firstSeg && firstSeg !== 'health') {
+  // Public endpoints: health (any) and signups (POST only — landing-page email capture).
+  // Reading the signups list still requires auth so the email list stays private.
+  const isPublicSignup = firstSeg === 'signups' && (req.method ?? 'GET') === 'POST';
+  if (firstSeg && firstSeg !== 'health' && !isPublicSignup) {
     if (!await verifyRequest(req)) { res.status(401).json({ error: 'Unauthorized' }); return; }
   }
 
@@ -351,6 +354,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (status && status !== 'none') all.push({ catKey, user, status, ts: new Date().toISOString() });
         await setList(KEY, all);
         res.json({ ok: true, rsvps: all }); return;
+      }
+    }
+
+    // ── Signups (landing-page email capture) ──────────────────────────────────
+    // POST /signups  { email, name?, source? }  → public (no auth), validated + deduped
+    // GET  /signups                              → gated (auth required, list is private)
+    if (resource === 'signups') {
+      const KEY = 'cr8w_signups';
+      if (method === 'POST' && !id) {
+        const b = await readBody(req);
+        const email = String(b?.email ?? '').trim().toLowerCase();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!emailOk) { res.status(400).json({ error: 'A valid email is required.' }); return; }
+        const list = await getList(KEY);
+        if (list.some((s: any) => String(s.email).toLowerCase() === email)) {
+          res.status(200).json({ ok: true, deduped: true }); return; // already on the list, treat as success
+        }
+        const entry = {
+          id: Date.now(),
+          email,
+          name: b?.name ? String(b.name).trim().slice(0, 120) : '',
+          source: b?.source ? String(b.source).trim().slice(0, 80) : 'landing',
+          created_at: new Date().toISOString(),
+        };
+        list.push(entry);
+        await setList(KEY, list);
+        res.status(201).json({ ok: true, email }); return;
+      }
+      if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
+      if (method === 'DELETE' && id) {
+        const list = await getList(KEY);
+        await setList(KEY, list.filter((s: any) => String(s.id) !== id));
+        res.json({ ok: true }); return;
       }
     }
 
