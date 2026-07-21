@@ -292,12 +292,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Chat reactions (live across profiles) ─────────────────────────────────
-    // GET  /chat-reactions          → list of { messageId, emoji, users[] }
-    // POST /chat-reactions/toggle   → body { messageId, emoji, user } toggles user
+    // GET  /chat-reactions   → list of { messageId, emoji, users[] }
+    // POST /chat-reactions   → body { action:'toggle', messageId, emoji, user } toggles user
     if (resource === 'chat-reactions') {
       const KEY = 'cr8w_chat_reactions';
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
-      if (method === 'POST' && id === 'toggle') {
+      if (method === 'POST' && !id) {
         const { messageId, emoji, user } = await readBody(req);
         if (messageId == null || !emoji || !user) { res.status(400).json({ error: 'messageId, emoji, user required' }); return; }
         const all = await getList(KEY);

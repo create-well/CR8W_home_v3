@@ -71,7 +71,7 @@ export const sync = () => req<SyncData>('GET', '/sync');
 // Chat reactions (live across profiles)
 export const getChatReactions = () => req<ChatReaction[]>('GET', '/chat-reactions');
 export const toggleChatReaction = (messageId: number | string, emoji: string, user: string) =>
-  req<{ ok: boolean; reactions: ChatReaction[] }>('POST', '/chat-reactions/toggle', { messageId, emoji, user });
+  req<{ ok: boolean; reactions: ChatReaction[] }>('POST', '/chat-reactions', { action: 'toggle', messageId, emoji, user });
 
 // Chat replies (threaded replies on chat messages)
 export const getChatReplies = () => req<ChatReply[]>('GET', '/chat-replies');
