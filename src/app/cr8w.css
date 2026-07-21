@@ -2198,3 +2198,106 @@ a.gcc-pill-link:hover { background: rgba(255,255,255,0.52); transform: translate
     padding: 20px 16px 28px;
   }
 }
+
+
+/* — Public landing signup (LandingSignup.tsx) — responsive desktop + mobile */
+.cw-landing {
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+text-align: center;
+padding: 32px 20px;
+box-sizing: border-box;
+background: linear-gradient(160deg, var(--sunshine-light) 0%, var(--sandstone) 60%, var(--peach-haze) 100%);
+color: var(--sunshine-deep);
+}
+.cw-landing h1 {
+font-size: clamp(1.8rem, 5vw, 3rem);
+line-height: 1.1;
+margin: 0 0 12px;
+max-width: 12ch;
+font-weight: 700;
+}
+.cw-landing > p {
+font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+color: var(--sunshine-deep);
+opacity: 0.85;
+margin: 0 0 28px;
+max-width: 40ch;
+}
+.cw-landing-form {
+display: flex;
+flex-direction: column;
+gap: 12px;
+width: 100%;
+max-width: 380px;
+text-align: left;
+}
+.cw-landing-form label {
+font-size: 0.8rem;
+font-weight: 600;
+letter-spacing: 0.02em;
+color: var(--sunshine-deep);
+margin-bottom: -6px;
+}
+.cw-landing-form input {
+width: 100%;
+box-sizing: border-box;
+padding: 14px 16px;
+font-size: 1rem;
+border: 1.5px solid var(--clay-velour);
+border-radius: 12px;
+background: #fff;
+color: var(--sunshine-deep);
+transition: border-color 0.15s ease;
+}
+.cw-landing-form input:focus {
+outline: none;
+border-color: var(--sunshine);
+box-shadow: 0 0 0 3px var(--sunshine-light);
+}
+.cw-landing-form button {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+margin-top: 8px;
+padding: 14px 20px;
+font-size: 1rem;
+font-weight: 700;
+color: #fff;
+background: var(--sunshine);
+border: none;
+border-radius: 12px;
+cursor: pointer;
+transition: background 0.15s ease, transform 0.1s ease;
+}
+.cw-landing-form button:hover { background: var(--sunshine-deep); }
+.cw-landing-form button:active { transform: translateY(1px); }
+.cw-landing-form button:disabled { opacity: 0.6; cursor: default; }
+.cw-success {
+font-size: 1.25rem;
+font-weight: 700;
+color: var(--sunshine-deep);
+margin: 24px 0;
+}
+.cw-err { color: #b3261e; font-size: 0.85rem; margin: 4px 0 0; }
+.cw-fineprint { font-size: 0.8rem; opacity: 0.7; margin-top: 8px; }
+.cw-staff-link {
+margin-top: 28px;
+background: none;
+border: none;
+color: var(--sunshine-deep);
+opacity: 0.7;
+font-size: 0.9rem;
+cursor: pointer;
+text-decoration: underline;
+}
+.cw-staff-link:hover { opacity: 1; }
+@media (max-width: 580px) {
+.cw-landing { padding: 24px 18px; justify-content: flex-start; padding-top: 12vh; }
+.cw-landing-form { max-width: 100%; }
+.cw-landing-form input, .cw-landing-form button { font-size: 16px; }
+}
