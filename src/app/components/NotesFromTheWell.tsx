@@ -135,7 +135,7 @@ export function NotesFromTheWell({ wellNotes, onAddNote, onLandNote }: Props) {
               textAlign: 'center',
               padding: '6px 0',
             }}>
-              it's in the well now. someone will find it when they need it. \uD83D\uDCA7
+              it's in the well now. someone will find it when they need it. 💧
             </div>
           ) : (
             <button

@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build output
+dist/
+build/
+.vite/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+*.local
+client_secret*.json
+*-recovery-codes.txt
+service-account*.json
+
+# vercel
+.vercel
+
+# supabase
+supabase/.branches
+supabase/.temp
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
+*.swp
