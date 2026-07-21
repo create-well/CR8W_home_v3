@@ -1003,7 +1003,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
             : null;
         const nextMilestoneLabel = nextMilestone
           ? `${nextMilestone.title.replace(/\s*🚀/, '')} · ${new Date(nextMilestone.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-          : 'Launch day approaching';
+          : daysToLaunch < 0 ? 'Launch day passed' : 'Launch day approaching';
         // Team role check
         const assignedRoles = ['sunshine', 'monny', 'bingle'].filter(p => stations.some(s => s.owner === p));
         const rolesLabel = assignedRoles.length >= 3 ? 'roles assigned' : 'needs update';
