@@ -180,10 +180,10 @@ button { cursor: pointer; }
 }
 
 .nav-brand-name {
-    font-family: var(--font-display);
+    font-family: var(--font-brand-display);
     font-size: 1.15rem;
     font-weight: 500;
-    color: var(--deep-rust);
+    color: var(--brand-rust);
     letter-spacing: 0.01em;
 }
 
@@ -799,10 +799,10 @@ a.gcc-pill-link:hover {
     gap: 12px;
 }
 .geyser-header-title {
-    font-family: var(--font-display);
+    font-family: var(--font-brand-display);
     font-size: 1.8rem;
     font-weight: 600;
-    color: var(--deep-rust);
+    color: var(--brand-rust);
     line-height: 1.2;
 }
 .geyser-header-subtitle {
