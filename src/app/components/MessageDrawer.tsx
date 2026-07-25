@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import cwLogoImg from 'figma:asset/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
+import cwLogoImg from '../../assets/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
 import { PERSONS } from './data';
 import type { Message } from './api';
 import {
