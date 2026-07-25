@@ -28,7 +28,7 @@ export const PERSONS: Record<string, Person> = {
   },
   omar: {
     name: 'Omar', fullName: 'Omar', role: 'New Member · Community Energy',
-    expression: 'Fresh Perspective / Creative Collaborator', color: '#9B7FD4', emoji: '🌟', authority: 'open',
+    expression: 'Fresh Perspective / Creative Collaborator', color: '#9B7FD4', emoji: '🌟', authority: 'sacral',
     energyReminder: {
       type: 'Welcome',
       text: 'You bring fresh eyes and new energy to the space. Your perspective matters — trust your intuition.',
