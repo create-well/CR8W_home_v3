@@ -10,7 +10,7 @@
  *   localStorage  cr8w_user_profile    = key   chosen profile key
  */
 import React, { useState, useCallback } from 'react';
-import cwLogoImg from 'figma:asset/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
+import cwLogoImg from '../../assets/26b5a4fd9027610adb3ddb9ed89749cb683707dd.png';
 
 // ── Default password ──────────────────────────────────────────────────────────
 // SHA-256 of "createwell" — set VITE_APP_PASSWORD_HASH to change it
