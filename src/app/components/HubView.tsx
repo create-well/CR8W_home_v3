@@ -1195,7 +1195,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           title="CR8W Shared Team Calendar"
           style={{
             width: '100%',
-            height: 400,
+            height: 220,
             borderRadius: 12,
             border: '1px solid rgba(0,0,0,0.1)',
             marginBottom: 0,
