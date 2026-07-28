@@ -1203,6 +1203,24 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           frameBorder="0"
           scrolling="no"
         />
+            {/* Rec 3: link to canonical calendar view (launchpad) to reduce duplicate surfaces */}
+<button
+type="button"
+onClick={() => onNavigate('workshops')}
+style={{
+marginTop: 8,
+background: 'none',
+border: 'none',
+color: 'var(--sunshine-deep)',
+font: 'inherit',
+fontSize: '0.85rem',
+cursor: 'pointer',
+textDecoration: 'underline',
+padding: 0,
+}}
+>
+View full calendar in the launchpad →
+</button>
 
         {/* Divider */}
         <div style={{
