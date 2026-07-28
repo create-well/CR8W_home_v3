@@ -444,7 +444,7 @@ const [showLogin, setShowLogin] = useState(false);
       setActionItems(prev => [...prev, created]);
       // System notification in CR8W Chat
       const personLabel = item.person ? item.person.charAt(0).toUpperCase() + item.person.slice(1) : 'Someone';
-      sendSystemMessage(`[UPDATE] \u{26F2}\uFE0F New Geyser task: "${item.title}" assigned to ${personLabel} (${item.priority} priority)`);
+      sendSystemMessage(`[UPDATE] \u{26F2}\uFE0F New Move: "${item.title}" assigned to ${personLabel} (${item.priority} priority)`);
     } catch (e) { console.error('Add task error:', e); }
   }
 
