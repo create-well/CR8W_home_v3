@@ -463,10 +463,12 @@ const [showLogin, setShowLogin] = useState(false);
   }
 
   async function deleteTask(id: number) {
+    if (!window.confirm('Delete this move? This cannot be undone.')) return;
     try {
       setActionItems(prev => prev.filter(t => t.id !== id));
       await api.deleteTask(id);
     } catch (e) { console.error('Delete task error:', e); }
+    
   }
 
   // ── Station actions ─────────────────────────────────────────────────────────
@@ -499,10 +501,12 @@ const [showLogin, setShowLogin] = useState(false);
   }
 
   async function deleteStation(id: number) {
+    if (!window.confirm('Delete this station? This cannot be undone.')) return;
     try {
       setStations(prev => prev.filter(s => s.id !== id));
       await api.deleteStation(id);
     } catch (e) { console.error('Delete station error:', e); }
+    
   }
 
   // ── Forum actions ───────────────────────────────────────────────────────────
