@@ -1085,7 +1085,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
             {/* Team */}
             <MiniCard
               emoji={'\u{1F465}'}
-              title="Team"
+              title="co-h0es"
               borderColor="#E8C875"
               subtitle={rolesLabel === 'needs update' ? (
                 <span style={{ color: 'var(--cr8w-primary, #7BA89D)', textDecoration: 'underline', cursor: 'pointer' }}>needs update →</span>
