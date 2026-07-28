@@ -597,7 +597,7 @@ export function DecomprocessFAB() {
         {/* Main FAB */}
         <button
           onClick={handleOpen}
-          title="decomprocess"
+          aria-label="Open decomprocess" title="decomprocess"
           className="decomprocess-fab"
           style={{
             position: 'relative',
