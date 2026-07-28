@@ -1023,7 +1023,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
         }) {
           return (
             <button
-              onClick={onClick}
+              onClick={onClick} title={title}
               style={{ ...cardBase, borderLeft: `3px solid ${borderColor}` }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.10)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; }}
