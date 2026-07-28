@@ -379,6 +379,10 @@ omar: {
 name: 'Omar', emoji: '⚙️', color: '#9B7FD4',
 short: 'A/V Support', sub: 'audio/visual · podcast recording · photo/video',
 },
+  pia: {
+name: 'Pia', emoji: '🎟️', color: '#8DB580',
+short: 'New Member', sub: 'raffle · ticketing · engagement',
+},
 'event-support': {
 name: 'Event Support', emoji: '🎪', color: '#E8AF93',
 short: 'Day-Of', sub: 'setup · cleanup · engagement',
