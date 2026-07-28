@@ -1017,9 +1017,9 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           textAlign: 'left', fontFamily: 'var(--font-label)',
         };
 
-        function MiniCard({ emoji, title, borderColor, badge, subtitle, onClick, children }: {
+        function MiniCard({ emoji, title, borderColor, badge, subtitle, progress, onClick, children }: {
           emoji: string; title: string; borderColor: string; badge?: number | string; subtitle: React.ReactNode;
-          onClick: () => void; children?: React.ReactNode;
+          progress?: number; onClick: () => void; children?: React.ReactNode;
         }) {
           return (
             <button
@@ -1042,7 +1042,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                 )}
               </div>
               {children}
-              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #6B5F55)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #6B5F55)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>{typeof progress === 'number' && (<div style={{ marginTop: 6, height: 4, borderRadius: 999, background: 'var(--surface-muted, rgba(0,0,0,0.08))', overflow: 'hidden' }}><div style={{ width: `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`, height: '100%', borderRadius: 999, background: borderColor, transition: 'width 0.4s ease' }} /></div>)}
             </button>
           );
         }
@@ -1069,7 +1069,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               emoji={'\u{1F4CD}'}
               title="Stations"
               borderColor="var(--cr8w-secondary, #B8A9D4)"
-              badge={confirmedStations}
+              badge={confirmedStations} progress={totalStations > 0 ? confirmedStations / totalStations : 0}
               subtitle={confirmedStations > 0 ? `${confirmedStations} of ${totalStations} confirmed` : 'Set up your stations →'}
               onClick={() => onNavigateGeyserStations()}
             />
@@ -1078,7 +1078,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               emoji={'\u{1F4E8}'}
               title="Guests"
               borderColor="#6BAF6B"
-              badge={inviteLoaded ? inviteCounts.confirmed : '—'}
+              badge={inviteLoaded ? inviteCounts.confirmed : '—'} progress={inviteLoaded && inviteCounts.total > 0 ? inviteCounts.confirmed / inviteCounts.total : undefined}
               subtitle={inviteLoaded && inviteCounts.total > 0 ? `${inviteCounts.confirmed} confirmed of ${inviteCounts.total}` : 'No guests synced yet · Connect invite sheet →'}
               onClick={() => onNavigate('geyser')}
             />
