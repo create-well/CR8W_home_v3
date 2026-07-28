@@ -375,7 +375,7 @@ export const TASK_ROLES: Record<string, { name: string; emoji: string; color: st
     short: 'Remote', sub: 'advance building · content · sponsor comms',
   },
   monny: {
-    name: 'Monica', emoji: '🌊', color: '#7AB8DC',
+    name: 'Monny', emoji: '🌊', color: '#7AB8DC',
     short: 'Open Invitation', sub: 'outreach · systems (never assumed)',
   },
   bingle: {
