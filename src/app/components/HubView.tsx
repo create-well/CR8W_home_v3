@@ -1042,7 +1042,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                 )}
               </div>
               {children}
-              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #6B5F55)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>{typeof progress === 'number' && (<div style={{ marginTop: 6, height: 4, borderRadius: 999, background: 'var(--surface-muted, rgba(0,0,0,0.08))', overflow: 'hidden' }}><div style={{ width: `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`, height: '100%', borderRadius: 999, background: borderColor, transition: 'width 0.4s ease' }} /></div><div style={{ marginTop: 2, fontSize: '0.6rem', fontWeight: 600, color: 'var(--text-muted, #6B5F55)', textAlign: 'right' }}>{Math.round(Math.max(0, Math.min(1, progress)) * 100)}%</div>)}
+              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, #6B5F55)', fontWeight: 500, lineHeight: 1.3 }}>{subtitle}</div>{typeof progress === 'number' && (<><div style={{ marginTop: 6, height: 4, borderRadius: 999, background: 'var(--surface-muted, rgba(0,0,0,0.08))', overflow: 'hidden' }}><div style={{ width: `${Math.round(Math.max(0, Math.min(1, progress)) * 100)}%`, height: '100%', borderRadius: 999, background: borderColor, transition: 'width 0.4s ease' }} /></div><div style={{ marginTop: 2, fontSize: '0.6rem', fontWeight: 600, color: 'var(--text-muted, #6B5F55)', textAlign: 'right' }}>{Math.round(Math.max(0, Math.min(1, progress)) * 100)}%</div></>)}
             </button>
           );
         }
