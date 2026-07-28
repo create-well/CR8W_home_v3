@@ -576,7 +576,7 @@ export function DecomprocessFAB() {
         {/* History mini-button */}
         <button
           onClick={handleOpenHistory}
-          title="decomprocess history"
+          aria-label="View decomprocess history" title="decomprocess history"
           style={{
             width: 26,
             height: 26,
