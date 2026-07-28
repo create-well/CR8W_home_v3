@@ -528,7 +528,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
   const [expandedProfileKey, setExpandedProfileKey] = useState<string | null>(null);
   const [profileHolding, setProfileHolding] = useState<Record<string, string>>(() => {
     const out: Record<string, string> = {};
-    for (const k of ['sunshine', 'monny', 'bingle']) {
+    for (const k of ['sunshine', 'monny', 'bingle', 'omar', 'pia']) {
       try { out[k] = localStorage.getItem(`profile_holding_${k}`) || ''; } catch { out[k] = ''; }
     }
     return out;
@@ -1005,7 +1005,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
           ? `${nextMilestone.title.replace(/\s*🚀/, '')} · ${new Date(nextMilestone.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
           : daysToLaunch < 0 ? 'Launch day passed' : 'Launch day approaching';
         // Team role check
-        const assignedRoles = ['sunshine', 'monny', 'bingle'].filter(p => stations.some(s => s.owner === p));
+        const assignedRoles = ['sunshine', 'monny', 'bingle', 'omar', 'pia'].filter(p => stations.some(s => s.owner === p));
         const rolesLabel = assignedRoles.length >= 3 ? 'roles assigned' : 'needs update';
 
         const cardBase: React.CSSProperties = {
@@ -1770,7 +1770,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                   time: cf.startTime && cf.endTime ? `${cf.startTime} – ${cf.endTime}` : cf.timeRange || '',
                   location: cf.location,
                   type: 'bhd' as const,
-                  persons: ['sunshine', 'monny', 'bingle'],
+                  persons: ['sunshine', 'monny', 'bingle', 'omar', 'pia'],
                   coFlowDate: cf,
                   hasCheckin: checkins.length > 0,
                   checkinCount: checkins.length,
