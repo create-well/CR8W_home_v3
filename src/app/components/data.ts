@@ -114,7 +114,7 @@ export const GLOSSARY = [
 { term: 'Ofcoursement', def: 'Synchronicity acknowledgment — when the universe says "of course."' },
 { term: 'Monnyfesting', def: 'Monny-specific manifesting — when the sacral generator brings visions into embodied reality.' }
 ];
-export const MILESTONES: { text: string; done: boolean }[] = [];
+export const MILESTONES: { text: string; done: boolean }[] = [ { text: 'Confirm venue setup: welcome area, circle seating, podcast room', done: false }, { text: 'Finalize run-of-show and team roles (6:00-8:30 PM)', done: false }, { text: 'Lock catering for arrival and closing service', done: false }, { text: 'Confirm A/V and multi-track podcast recording setup', done: false }, { text: 'Define creative activation / paint wall vision', done: false }, { text: 'Prepare raffle prizes and ticketing system', done: false }, { text: 'Send guest invites and confirm RSVPs', done: false }, { text: 'Team huddle 30 min before doors', done: false } ];
 export interface Station {
 id: number; emoji: string; name: string; status: string;
 description: string; owner: string;
@@ -126,7 +126,7 @@ monny: { calendarSrc: '' },
 bingle: { calendarSrc: '' },
 omar: { calendarSrc: '' }
 };
-export const GUEST_JOURNEY: { step: number; icon: string; title: string; desc: string; status: string }[] = [];
+export const GUEST_JOURNEY: { step: number; icon: string; title: string; desc: string; status: string }[] = [ { step: 1, icon: '👋', title: 'Welcome', desc: 'Greet early arrivals; catering display open; welcome area active (6:00 PM).', status: 'planning' }, { step: 2, icon: '💛', title: 'Opening', desc: 'Lead welcome and community heart-centering — Bingle (6:30 PM).', status: 'planning' }, { step: 3, icon: '📽', title: 'Presentation', desc: 'Strategic overview and vision-setting; circle seating (6:45 PM).', status: 'planning' }, { step: 4, icon: '🎙', title: 'Podcast Recording', desc: 'Community/interactive podcast episode recording (7:15 PM).', status: 'confirmed' }, { step: 5, icon: '🎨', title: 'Activation', desc: 'Creative experience: photo backdrop / inspiration wall (7:50 PM).', status: 'exploring' }, { step: 6, icon: '🎟', title: 'Raffle', desc: 'Distribution of prizes: creative experiences, wellness offerings, studio rentals (8:10 PM).', status: 'planning' }, { step: 7, icon: '🌙', title: 'Closing', desc: 'Final remarks and wrap-up; catering closing service (8:20 PM).', status: 'planning' } ];
 export const QUOTES = [
 "Here, is where you fall in love with the process.",
 "Flow over force.",
