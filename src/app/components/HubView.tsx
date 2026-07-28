@@ -1097,6 +1097,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
                   { key: 'sunshine', emoji: '☀️', color: '#D4A5A5' },
                   { key: 'monny', emoji: '🌊', color: '#7BA89D' },
                   { key: 'bingle', emoji: '✨', color: '#B8A9D4' },
+              { key: 'omar', emoji: '🎙️', color: '#C89B7B' },
+              { key: 'pia', emoji: '🎟️', color: '#A5C8D4' },
                 ].map((p, i) => {
                   const personName = p.key.charAt(0).toUpperCase() + p.key.slice(1);
                   return (
