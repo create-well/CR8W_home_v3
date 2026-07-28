@@ -55,7 +55,7 @@ export function AddTaskModal({ currentPerson, onAdd, onClose }: AddTaskModalProp
               <select value={person} onChange={e => setPerson(e.target.value)}>
                 <option value="sunshine">☀️ Sunshine</option>
                 <option value="monny">🌊 Monny</option>
-                <option value="bingle">✨ Bingle</option>
+                <option value="bingle">✨ Bingle</option>             <option value="omar">⚙️ Omar</option>             <option value="pia">🌸 Pia</option>
               </select>
             </div>
           )}
