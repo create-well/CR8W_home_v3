@@ -1060,7 +1060,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               emoji={'\u{1F4CB}'}
               title="Moves"
               borderColor="var(--cr8w-primary, #7BA89D)"
-              badge={openTasks.length}
+              badge={openTasks.length} progress={actionItems.length > 0 ? (actionItems.length - openTasks.length) / actionItems.length : undefined}
               subtitle={openTasks.length > 0 ? `${openTasks.length} in motion this week` : 'No moves yet · Add one →'}
               onClick={() => onNavigate('geyser')}
             />
