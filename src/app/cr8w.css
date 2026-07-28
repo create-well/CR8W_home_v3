@@ -2301,3 +2301,13 @@ text-decoration: underline;
 .cw-landing-form { max-width: 100%; }
 .cw-landing-form input, .cw-landing-form button { font-size: 16px; }
 }
+
+/* === Rec 5: launchpad tab-bar overflow fix (keep Forum tab reachable) === */
+.geyser-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.geyser-tabs::-webkit-scrollbar { display: none; }
+.geyser-tab { flex: 0 0 auto; white-space: nowrap; }
