@@ -342,7 +342,7 @@ export function MessageDrawer({
 
   // ── Computed: unread count ──
   const unreadMsgIds = useMemo(() => {
-    return messages.filter(m => m.id > 0 && !readIds.has(m.id) && !dismissedIds.has(m.id)).map(m => m.id);
+    return messages.filter(m => m.id > 0 && !readIds.has(m.id) && !dismissedIds.has(m.id) && !isSystemMsg(m)).map(m => m.id);
   }, [messages, readIds, dismissedIds]);
 
   const unreadCount = unreadMsgIds.length;
