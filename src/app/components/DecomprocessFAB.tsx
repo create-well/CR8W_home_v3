@@ -559,7 +559,7 @@ export function DecomprocessFAB() {
     <>
       {/* Pulsing keyframe */}
       <style>{`
-        @keyframes decomRecordPulse {
+        @media (prefers-reduced-motion: reduce) { .decomprocess-fab, .decomprocess-sheet, .decomprocess-backdrop { animation: none !important; transition: none !important; } } @keyframes decomRecordPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.06); opacity: 0.85; }
         }
