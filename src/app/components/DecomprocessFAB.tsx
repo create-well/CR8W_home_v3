@@ -184,7 +184,7 @@ function VoiceInput({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
           <audio controls src={filePreview} style={{ width: '100%', height: 40, borderRadius: 8 }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: "var(--font-label)", fontSize: '0.75rem', color: PRIMARY_DARK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+            <span role="status" aria-live="polite" style={{ fontFamily: "var(--font-label)", fontSize: '0.75rem', color: PRIMARY_DARK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
               {'\uD83C\uDFA4'} {fileName}
             </span>
             <button
