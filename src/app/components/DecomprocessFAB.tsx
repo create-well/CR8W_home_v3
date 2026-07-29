@@ -564,6 +564,7 @@ export function DecomprocessFAB() {
           50% { transform: scale(1.06); opacity: 0.85; }
         }
         .decomprocess-fab:focus-visible { outline: 2px solid var(--primary, #7BA89D); outline-offset: 2px; }
+        .decomprocess-sheet button:focus-visible, .decomprocess-sheet [role="button"]:focus-visible { outline: 2px solid var(--primary, #7BA89D); outline-offset: 2px; }
       `}</style>
 
       {/* ── FAB cluster: bottom-LEFT (chat is bottom-RIGHT) ── */}
