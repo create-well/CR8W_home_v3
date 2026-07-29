@@ -666,7 +666,7 @@ export function DecomprocessFAB() {
                 ) : (
                   <>
                     {/* Step indicator */}
-                    <div className="decomprocess-step-bar">
+                    <div className="decomprocess-step-bar" role="progressbar" aria-label="Decomprocess progress" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}>
                       {[1, 2, 3].map(s => (
                         <div key={s} className={`decomprocess-step-pip ${step >= s ? 'active' : 'inactive'}`} />
                       ))}
