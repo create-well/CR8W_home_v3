@@ -866,7 +866,7 @@ export function DecomprocessFAB() {
                             }}>
                               {formatRelativeDate(entry.timestamp)}
                             </span>
-                            <span style={{
+                            <span aria-hidden="true" style={{
                               fontSize: '0.6rem', color: 'var(--text-muted)',
                               transition: 'transform 0.2s',
                               transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
