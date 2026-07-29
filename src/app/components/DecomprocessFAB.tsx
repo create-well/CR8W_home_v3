@@ -659,7 +659,7 @@ export function DecomprocessFAB() {
             {!showHistory && (
               <>
                 {sealed ? (
-                  <div className="decomprocess-seal-msg" style={{
+                  <div className="decomprocess-seal-msg" role="status" aria-live="polite" style={{
                     textAlign: 'center', padding: '40px 0',
                     fontFamily: "var(--font-display)", fontSize: '1.05rem',
                     color: TEXT_MAIN, lineHeight: 1.5,
