@@ -273,6 +273,7 @@ function VideoInput({
         <>
           <button
             onClick={() => fileRef.current?.click()}
+            aria-label="Record video note"
             style={{
               width: 72, height: 72, borderRadius: '50%', border: 'none',
               background: PRIMARY, color: '#fff', fontSize: '1.8rem',
