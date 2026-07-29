@@ -448,7 +448,7 @@ export function DecomprocessFAB() {
   const [mediaBlob, setMediaBlob] = useState<Blob | null>(null);
   const [body, setBody] = useState('');
   const [carryForward, setCarryForward] = useState('');
-  const [sealed, setSealed] = useState(false);
+  const [sealed, setSealed] = useState(false); useEffect(() => { if (!open) return; const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && !sealed) setOpen(false); }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown); }, [open, sealed]);
   const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
 
   function handleOpen() {
