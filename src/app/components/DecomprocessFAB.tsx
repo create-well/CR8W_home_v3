@@ -624,7 +624,7 @@ export function DecomprocessFAB() {
               animation: 'cw-fadeInUp 0.2s ease',
             }}
           />
-          <div className="decomprocess-sheet" style={{
+          <div className="decomprocess-sheet" role="dialog" aria-modal="true" aria-label="Decomprocess" style={{
             animation: 'decomSlideUp 0.3s ease',
             maxHeight: showHistory ? '70vh' : undefined,
             overflowY: showHistory ? 'auto' : undefined,
