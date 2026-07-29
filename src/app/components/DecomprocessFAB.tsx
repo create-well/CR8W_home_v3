@@ -210,6 +210,7 @@ function VoiceInput({
       </div>
       <textarea
         value={manualNote}
+        aria-label="Recording context note"
         onChange={e => { setManualNote(e.target.value); onTranscript(e.target.value); }}
         placeholder="quick context for this recording..."
         style={{
@@ -688,6 +689,7 @@ export function DecomprocessFAB() {
                         {mode === 'write' && (
                           <textarea
                             value={happened}
+                            aria-label="What happened"
                             onChange={e => setHappened(e.target.value)}
                             placeholder="dump it here. no editing. no judgment."
                             autoFocus
@@ -765,6 +767,7 @@ export function DecomprocessFAB() {
                           value={carryForward}
                           onChange={e => setCarryForward(e.target.value)}
                           placeholder="just one thing..."
+                          aria-label="One thing to carry forward"
                           autoFocus
                           onKeyDown={e => { if (e.key === 'Enter' && carryForward.trim()) handleSeal(); }}
                           style={{
