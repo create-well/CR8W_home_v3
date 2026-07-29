@@ -448,7 +448,7 @@ export function DecomprocessFAB() {
   const [mediaBlob, setMediaBlob] = useState<Blob | null>(null);
   const [body, setBody] = useState('');
   const [carryForward, setCarryForward] = useState('');
-  const [sealed, setSealed] = useState(false); useEffect(() => { if (!open) return; const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && !sealed) setOpen(false); }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown); }, [open, sealed]);
+  const [sealed, setSealed] = useState(false); useEffect(() => { if (!open) return; const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && !sealed) { setOpen(false); return; } if (e.key === 'Tab' && sheetRef.current) { const f = sheetRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'); if (f.length) { const first = f[0]; const last = f[f.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } } } }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown); }, [open, sealed]);
   const fabRef = useRef<HTMLButtonElement>(null); const wasOpenRef = useRef(false); useEffect(() => { if (wasOpenRef.current && !open) fabRef.current?.focus(); wasOpenRef.current = open; }, [open]); const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
 
   function handleOpen() {
