@@ -563,6 +563,7 @@ export function DecomprocessFAB() {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.06); opacity: 0.85; }
         }
+        .decomprocess-fab:focus-visible { outline: 2px solid var(--primary, #7BA89D); outline-offset: 2px; }
       `}</style>
 
       {/* ── FAB cluster: bottom-LEFT (chat is bottom-RIGHT) ── */}
