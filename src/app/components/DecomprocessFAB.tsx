@@ -157,6 +157,7 @@ function VoiceInput({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <button
             onClick={() => fileRef.current?.click()}
+            aria-label="Record voice note"
             style={{
               width: 72, height: 72, borderRadius: '50%', border: 'none',
               background: PRIMARY, color: '#fff', fontSize: '1.8rem',
