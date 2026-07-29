@@ -840,7 +840,7 @@ export function DecomprocessFAB() {
                       return (
                         <div
                           key={idx}
-                          onClick={() => setExpandedEntry(isExpanded ? null : idx)} role="button" tabIndex={0} aria-expanded={isExpanded} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedEntry(isExpanded ? null : idx); } }}
+                          onClick={() => setExpandedEntry(isExpanded ? null : idx)} role="button" tabIndex={0} aria-expanded={isExpanded} aria-label={`History entry from ${formatRelativeDate(entry.timestamp)}, activate to ${isExpanded ? 'collapse' : 'expand'}`} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedEntry(isExpanded ? null : idx); } }}
                           style={{
                             padding: '12px 14px',
                             borderBottom: '1px solid rgba(44,28,16,0.06)',
