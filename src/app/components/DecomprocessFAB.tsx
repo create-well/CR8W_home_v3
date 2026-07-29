@@ -305,7 +305,7 @@ function VideoInput({
             style={{ width: '100%', maxHeight: 200, borderRadius: 12, background: '#000', objectFit: 'cover' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <span style={{
+            <span role="status" aria-live="polite" style={{
               fontFamily: "var(--font-label)", fontSize: '0.75rem', color: PRIMARY_DARK,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%',
             }}>
