@@ -835,7 +835,7 @@ export function DecomprocessFAB() {
                       return (
                         <div
                           key={idx}
-                          onClick={() => setExpandedEntry(isExpanded ? null : idx)}
+                          onClick={() => setExpandedEntry(isExpanded ? null : idx)} role="button" tabIndex={0} aria-expanded={isExpanded}
                           style={{
                             padding: '12px 14px',
                             borderBottom: '1px solid rgba(44,28,16,0.06)',
