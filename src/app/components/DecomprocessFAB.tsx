@@ -449,7 +449,7 @@ export function DecomprocessFAB() {
   const [body, setBody] = useState('');
   const [carryForward, setCarryForward] = useState('');
   const [sealed, setSealed] = useState(false); useEffect(() => { if (!open) return; const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && !sealed) setOpen(false); }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown); }, [open, sealed]);
-  const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
+  const fabRef = useRef<HTMLButtonElement>(null); const wasOpenRef = useRef(false); useEffect(() => { if (wasOpenRef.current && !open) fabRef.current?.focus(); wasOpenRef.current = open; }, [open]); const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
 
   function handleOpen() {
     setOpen(true);
@@ -601,7 +601,7 @@ export function DecomprocessFAB() {
 
         {/* Main FAB */}
         <button
-          onClick={handleOpen}
+          ref={fabRef} onClick={handleOpen}
           aria-label="Open decomprocess" title="decomprocess"
           className="decomprocess-fab"
           style={{
