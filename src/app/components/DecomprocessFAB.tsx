@@ -738,7 +738,7 @@ export function DecomprocessFAB() {
                             <button
                               key={o.key}
                               onClick={() => handleBodySelect(o.key)}
-                              className="decomprocess-body-pill"
+                              className="decomprocess-body-pill" aria-pressed={body === o.key} aria-label={o.label}
                               style={{
                                 padding: '12px 20px', borderRadius: 16,
                                 border: body === o.key ? `2px solid ${PRIMARY}` : '1.5px solid rgba(44,28,16,0.12)',
