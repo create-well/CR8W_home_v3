@@ -1212,8 +1212,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
               <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.68rem', color: icalSyncMsg.startsWith('Sync error') ? '#C03020' : '#3A7A3A' }}>{icalSyncMsg}</span>
             )}
             <a
-              href="https://calendar.google.com/calendar/u/0/r"
-              target="_blank" rel="noopener noreferrer"
+              href="#" role="button"
+              onClick={(e) => { e.preventDefault(); connectGoogleCalendar(); }}
               className="hub-gcal-open"
             >Open ↗</a>
           </div>
