@@ -79,14 +79,21 @@ import type { CoFlowDate, CoFlowCheckin, WellNote } from './components/api';
             console.error('[GCal OAuth] Token exchange error:', data.error, data.error_description);
             localStorage.setItem('gcal_token_fresh', 'error');
             localStorage.setItem('gcal_token_error', data.error_description || data.error);
-            return;
+          return;
           }
-          if (data.access_token) {
+        if (data.access_token) {
             // Store in temp key AND per-user key if we know the user
             localStorage.setItem('gcal_access_token', data.access_token);
+            // Persist refresh_token (needed for silent renewal after access_token expires)
+            if (data.refresh_token) {
+              localStorage.setItem('gcal_refresh_token', data.refresh_token);
+            }
             const oauthUser = localStorage.getItem('gcal_oauth_user');
             if (oauthUser) {
               localStorage.setItem(`gcal_token_${oauthUser.toUpperCase()}`, data.access_token);
+              if (data.refresh_token) {
+                localStorage.setItem(`gcal_refresh_${oauthUser.toUpperCase()}`, data.refresh_token);
+              }
             }
             localStorage.setItem('gcal_token_fresh', 'ready');
             console.log('[GCal OAuth] Token exchange successful' + (oauthUser ? ` for ${oauthUser}` : ''));
