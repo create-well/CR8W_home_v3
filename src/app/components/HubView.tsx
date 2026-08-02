@@ -757,7 +757,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
       + `&scope=${encodeURIComponent(SCOPES)}`
       + `&code_challenge=${encodeURIComponent(codeChallenge)}`
       + `&code_challenge_method=S256`
-      + `&access_type=online`
+      + `&access_type=offline`
       + `&prompt=consent`;
 
     window.location.href = authUrl;
