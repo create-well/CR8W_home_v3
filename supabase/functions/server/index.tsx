@@ -706,6 +706,56 @@ app.post("/make-server-8dcd9693/gcal-token-exchange", async (c) => {
   }
 });
 
+// — Google Calendar OAuth Token Refresh (uses refresh_token to silently renew access_token)
+app.post("/make-server-8dcd9693/gcal-token-refresh", async (c) => {
+  try {
+    const { refresh_token, client_id } = await c.req.json();
+
+    if (!refresh_token || !client_id) {
+      return c.json({ error: "Missing required fields: refresh_token, client_id" }, 400);
+    }
+
+    const clientSecret = Deno.env.get("GCAL_CLIENT_SECRET");
+    if (!clientSecret) {
+      console.log("GCAL_CLIENT_SECRET env var is not set");
+      return c.json({ error: "Server misconfiguration: Google OAuth client secret not set" }, 500);
+    }
+
+    const params: Record<string, string> = {
+      refresh_token,
+      client_id,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+    };
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(params).toString(),
+    });
+
+    const tokenData = await tokenRes.json();
+
+    if (tokenData.error) {
+      console.log("Google OAuth token refresh error:", tokenData.error, tokenData.error_description);
+      return c.json({ error: tokenData.error, error_description: tokenData.error_description }, 400);
+    }
+
+    // Google may not return a new refresh_token on refresh — only echo one back if present
+    return c.json({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_in: tokenData.expires_in,
+      token_type: tokenData.token_type,
+      scope: tokenData.scope,
+    });
+  } catch (e) {
+    console.log("GCal token refresh error:", e);
+    return c.json({ error: `GCal token refresh failed: ${e}` }, 500);
+  }
+});
+
+
 // ══════════════════════════════════════════════════════════════════════════════
 // INVITE COUNTS (pushed from Google Sheets via Apps Script)
 // ══════════════════════════════════════════════════════════════════════════════

@@ -642,14 +642,44 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        localStorage.removeItem(userTokenKey);
-        localStorage.removeItem(userNameKey);
-        localStorage.removeItem('gcal_token_fresh');
-        setGcalConnected(false);
-        setGcalCalendarName('');
-        setGcalError('Session expired — reconnect Google Calendar');
-        return;
-      }
+          // Try a silent refresh using the stored refresh_token before forcing reconnect
+          const refreshKey = `gcal_refresh_${userKey}`;
+          const refreshToken = localStorage.getItem(refreshKey) || localStorage.getItem('gcal_refresh_token');
+          if (refreshToken) {
+            try {
+              const host = window.location.hostname;
+              const onVercelOrDomain = host.endsWith('.vercel.app') || host === 'createwell.monnyfest.co' || host === 'localhost' || host === '127.0.0.1';
+              const apiBase = (import.meta.env.VITE_API_BASE as string | undefined) ?? (onVercelOrDomain ? '/api/server' : 'https://cr8w-home-v2.vercel.app/api/server');
+              const refreshRes = await fetch(`${apiBase}/gcal-token-refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: refreshToken, client_id: GCAL_CLIENT_ID }),
+              });
+              const refreshData = await refreshRes.json();
+              if (refreshRes.ok && refreshData.access_token) {
+                localStorage.setItem(userTokenKey, refreshData.access_token);
+                localStorage.setItem('gcal_access_token', refreshData.access_token);
+                if (refreshData.refresh_token) {
+                  localStorage.setItem(refreshKey, refreshData.refresh_token);
+                  localStorage.setItem('gcal_refresh_token', refreshData.refresh_token);
+                }
+                // Retry the fetch with the freshly renewed token
+                return fetchCalendarEvents(refreshData.access_token);
+              }
+            } catch (refreshErr) {
+              console.error('[GCal OAuth] Silent token refresh failed:', refreshErr);
+            }
+          }
+          // Refresh unavailable or failed — clear stale credentials and prompt reconnect
+          localStorage.removeItem(userTokenKey);
+          localStorage.removeItem(userNameKey);
+          localStorage.removeItem('gcal_token_fresh');
+          localStorage.removeItem(`gcal_refresh_${userKey}`);
+          setGcalConnected(false);
+          setGcalCalendarName('');
+          setGcalError('Session expired — reconnect Google Calendar');
+          return;
+        }
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(`Google Calendar API error ${res.status}: ${errText}`);
