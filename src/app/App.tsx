@@ -802,7 +802,7 @@ const [showLogin, setShowLogin] = useState(false);
 
   // Show login gate until authenticated
   if (!authed) {
-        return showLogin ? <AuthGate onAuthenticated={handleAuthenticated} /> : <LandingSignup onStaff={() => setShowLogin(true)} />;
+        return <AuthGate onAuthenticated={handleAuthenticated} />;
   }
 
   return (
