@@ -723,7 +723,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
         if (status === 'ready') {
           clearInterval(pollId);
           localStorage.removeItem('gcal_token_fresh');
-          const token = localStorage.getItem(userTokenKey);
+                      const token = localStorage.getItem(userTokenKey) || localStorage.getItem('gcal_access_token');
+            if (token) localStorage.setItem(userTokenKey, token);
           if (token) {
             setGcalConnected(true);
             fetchCalendarEvents(token);
@@ -759,7 +760,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
     }
 
     // Check for existing token from a previous session
-    const storedToken = localStorage.getItem(userTokenKey);
+        const storedToken = localStorage.getItem(userTokenKey) || localStorage.getItem('gcal_access_token');
+    if (storedToken) localStorage.setItem(userTokenKey, storedToken);
     if (storedToken) {
       setGcalConnected(true);
       fetchCalendarEvents(storedToken);
