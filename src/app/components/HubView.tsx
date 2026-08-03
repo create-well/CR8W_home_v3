@@ -577,8 +577,8 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
   const userTokenKey = `gcal_token_${userKey}`;
   const userNameKey = `gcal_name_${userKey}`;
 
-  const [showPersonalEvents, setShowPersonalEvents] = useState(() => !!localStorage.getItem(userTokenKey));
-  const [gcalConnected, setGcalConnected] = useState(() => !!localStorage.getItem(userTokenKey));
+  const [showPersonalEvents, setShowPersonalEvents] = useState(() => !!localStorage.getItem(userTokenKey) || !!localStorage.getItem('gcal_access_token'));
+  const [gcalConnected, setGcalConnected] = useState(() => !!localStorage.getItem(userTokenKey) || !!localStorage.getItem('gcal_access_token'));
   const [gcalEvents, setGcalEvents] = useState<{ time: string; name: string }[]>([]);
   const [gcalLoading, setGcalLoading] = useState(() => localStorage.getItem('gcal_token_fresh') === 'pending');
   const [gcalError, setGcalError] = useState('');
@@ -591,7 +591,7 @@ export function HubView({ onNavigate, onNavigateGeyserStations, announcements, b
     if (prevUserRef.current === userKey) return;
     prevUserRef.current = userKey;
     mountFetchedRef.current = false; // allow re-fetch for new user
-    const hasToken = !!localStorage.getItem(userTokenKey);
+    const hasToken = !!localStorage.getItem(userTokenKey) || !!localStorage.getItem('gcal_access_token');
     setGcalConnected(hasToken);
     setShowPersonalEvents(hasToken);
     setGcalCalendarName(localStorage.getItem(userNameKey) || '');
