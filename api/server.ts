@@ -113,6 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'cr8w_workshops','cr8w_workshop_programs','cr8w_workshop_resources',
         'cr8w_coflow_dates','cr8w_coflow_checkins','cr8w_well_notes','cr8w_calendar_events',
         'cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps',
+        'cr8w_pod_episodes','cr8w_pod_guests','cr8w_topic_drops',
+        'cr8w_applicants','cr8w_collaborators','cr8w_revenue_ops',
       ];
       const { data, error } = await sb().from(TABLE).select('key,value').in('key', KEYS);
       if (error) { res.status(500).json({ error: error.message }); return; }
@@ -128,6 +130,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         wellNotes: m['cr8w_well_notes']??[], calendarEvents: m['cr8w_calendar_events']??[],
         chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[],
         wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
+        episodes: m['cr8w_pod_episodes']??[], guests: m['cr8w_pod_guests']??[],
+        topicDrops: m['cr8w_topic_drops']??[],
+        applicants: m['cr8w_applicants']??[], collaborators: m['cr8w_collaborators']??[],
+        revenueOps: m['cr8w_revenue_ops']??[],
       });
       return;
     }
@@ -241,8 +247,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const block = m[1];
           const prop = (name: string) => {
             const r = new RegExp(String.raw`${name}[^:
-]*:([^
-]+)`);
+]*:([^\n]+)`);
             const hit = block.match(r);
                     return hit ? hit[1].replace(/\r/g, '').replace(/\n/g, ' ').replace(/\,/g, ',').trim() : '';
           };
@@ -397,6 +402,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       workshops:'cr8w_workshops', 'workshop-programs':'cr8w_workshop_programs',
       'workshop-resources':'cr8w_workshop_resources', 'coflow-dates':'cr8w_coflow_dates',
       'coflow-checkins':'cr8w_coflow_checkins', 'well-notes':'cr8w_well_notes',
+      episodes:'cr8w_pod_episodes', guests:'cr8w_pod_guests', 'topic-drops':'cr8w_topic_drops',
+      applicants:'cr8w_applicants', collaborators:'cr8w_collaborators', 'revenue-ops':'cr8w_revenue_ops',
     };
     const kvKey = KV[resource];
     if (kvKey) {
