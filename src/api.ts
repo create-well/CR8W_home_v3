@@ -108,7 +108,6 @@ export const updateWellNote = (id: number, n: Partial<WellNote>) => req<WellNote
 export const getCalendarEvents = () => req<CalendarEventKV[]>('GET', '/calendar-events');
 
 // ── New v3 endpoints (workshop applicants, collaborators, revenue) ────────────
-// These will need backend support; frontend assumes they exist.
 export const getApplicants = () => req<Applicant[]>('GET', '/applicants');
 export const createApplicant = (a: Omit<Applicant, 'id' | 'created_at'>) => req<Applicant>('POST', '/applicants', a);
 export const updateApplicant = (id: number, a: Partial<Applicant>) => req<Applicant>('PUT', `/applicants/${id}`, a);
@@ -124,21 +123,21 @@ export const createRevenueOp = (r: Omit<RevenueOp, 'id' | 'created_at'>) => req<
 export const updateRevenueOp = (id: number, r: Partial<RevenueOp>) => req<RevenueOp>('PUT', `/revenue-ops/${id}`, r);
 export const deleteRevenueOp = (id: number) => req<{ ok: boolean }>('DELETE', `/revenue-ops/${id}`);
 
-// ── Podcast endpoints ─────────────────────────────────────────────────────────
+// ── Podcast endpoints (legacy — use Supabase directly for live sync) ──────────
 export const getEpisodes = () => req<Episode[]>('GET', '/episodes');
 export const createEpisode = (e: Omit<Episode, 'id' | 'created_at'>) => req<Episode>('POST', '/episodes', e);
-export const updateEpisode = (id: number, e: Partial<Episode>) => req<Episode>('PUT', `/episodes/${id}`, e);
-export const deleteEpisode = (id: number) => req<{ ok: boolean }>('DELETE', `/episodes/${id}`);
+export const updateEpisode = (id: string, e: Partial<Episode>) => req<Episode>('PUT', `/episodes/${id}`, e);
+export const deleteEpisode = (id: string) => req<{ ok: boolean }>('DELETE', `/episodes/${id}`);
 
 export const getGuests = () => req<Guest[]>('GET', '/guests');
 export const createGuest = (g: Omit<Guest, 'id' | 'created_at'>) => req<Guest>('POST', '/guests', g);
-export const updateGuest = (id: number, g: Partial<Guest>) => req<Guest>('PUT', `/guests/${id}`, g);
-export const deleteGuest = (id: number) => req<{ ok: boolean }>('DELETE', `/guests/${id}`);
+export const updateGuest = (id: string, g: Partial<Guest>) => req<Guest>('PUT', `/guests/${id}`, g);
+export const deleteGuest = (id: string) => req<{ ok: boolean }>('DELETE', `/guests/${id}`);
 
 export const getTopicDrops = () => req<TopicDrop[]>('GET', '/topic-drops');
 export const createTopicDrop = (d: Omit<TopicDrop, 'id' | 'created_at'>) => req<TopicDrop>('POST', '/topic-drops', d);
-export const updateTopicDrop = (id: number, d: Partial<TopicDrop>) => req<TopicDrop>('PUT', `/topic-drops/${id}`, d);
-export const deleteTopicDrop = (id: number) => req<{ ok: boolean }>('DELETE', `/topic-drops/${id}`);
+export const updateTopicDrop = (id: string, d: Partial<TopicDrop>) => req<TopicDrop>('PUT', `/topic-drops/${id}`, d);
+export const deleteTopicDrop = (id: string) => req<{ ok: boolean }>('DELETE', `/topic-drops/${id}`);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface Task {
@@ -331,7 +330,7 @@ export type EpisodeStatus =
 export type GuestStage = 'aligned' | 'invited' | 'scheduled' | 'prepped' | 'recorded' | 'aired' | 'thanked';
 
 export interface Episode {
-  id: number;
+  id: string;
   episodeNum: number;
   topic: string;
   recordingDate?: string;
@@ -344,7 +343,7 @@ export interface Episode {
     benediction?: string;
     closer?: string;
   };
-  guestId?: number;
+  guestId?: string;
   status: EpisodeStatus;
   rawAudioLink?: string;
   finalLength?: number;
@@ -357,7 +356,7 @@ export interface Episode {
 }
 
 export interface Guest {
-  id: number;
+  id: string;
   name: string;
   contact: string;
   connectionType: 'community member' | 'collaborator' | 'reciprocal pod' | 'other';
@@ -373,7 +372,7 @@ export interface Guest {
 }
 
 export interface TopicDrop {
-  id: number;
+  id: string;
   text: string;
   dropper?: string | null;
   weekId?: string;

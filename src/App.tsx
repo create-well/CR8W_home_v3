@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as api from './api';
-import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, Workshop, WorkshopProgram, WorkshopResource, CoFlowDate, CoFlowCheckin, WellNote, Applicant, Collaborator, RevenueOp, Episode, Guest, TopicDrop } from './api';
+import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, Workshop, WorkshopProgram, WorkshopResource, CoFlowDate, CoFlowCheckin, WellNote, Applicant, Collaborator, RevenueOp } from './api';
 
 import { TopNav } from './components/TopNav';
 import { AuthGate } from './components/AuthGate';
@@ -12,6 +12,7 @@ import { CoFlowView } from './views/CoFlowView';
 import { TeamView } from './views/TeamView';
 import { RevenueView } from './views/RevenueView';
 import { ImessageTerminal } from './components/iMessageTerminal';
+import { usePodcastRealtime } from './hooks/usePodcastRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 
@@ -33,7 +34,7 @@ export default function App() {
   const [syncTime, setSyncTime] = useState('');
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Data states
+  // Data states (legacy API — polled)
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const [forum, setForum] = useState<ForumPost[]>([]);
@@ -50,10 +51,20 @@ export default function App() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [revenueOps, setRevenueOps] = useState<RevenueOp[]>([]);
-  // Podcast states
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [topicDrops, setTopicDrops] = useState<TopicDrop[]>([]);
+
+  // Podcast data — live-synced via Supabase real-time
+  const {
+    episodes,
+    guests,
+    topicDrops,
+    addEpisode,
+    updateEpisode,
+    deleteEpisode,
+    addGuest,
+    updateGuest,
+    addTopicDrop,
+    updateTopicDrop,
+  } = usePodcastRealtime();
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -83,9 +94,6 @@ export default function App() {
         setApplicants(data.applicants || []);
         setCollaborators(data.collaborators || []);
         setRevenueOps(data.revenueOps || []);
-        setEpisodes(data.episodes || []);
-        setGuests(data.guests || []);
-        setTopicDrops(data.topicDrops || []);
         setSyncStatus('ok');
         silentFailCount.current = 0;
         const now = new Date();
@@ -198,31 +206,6 @@ export default function App() {
   };
   const updateRevenueOp = async (id: number, updates: Partial<api.RevenueOp>) => {
     try { setRevenueOps(p => p.map(r => r.id === id ? { ...r, ...updates } : r)); await api.updateRevenueOp(id, updates); } catch (e) { console.error(e); }
-  };
-
-  // Podcast actions
-  const addEpisode = async (e: Omit<api.Episode, 'id' | 'created_at'>) => {
-    try { const created = await api.createEpisode(e); setEpisodes(p => [...p, created]); } catch (err) { console.error(err); }
-  };
-  const updateEpisode = async (id: number, updates: Partial<api.Episode>) => {
-    try { setEpisodes(p => p.map(e => e.id === id ? { ...e, ...updates } : e)); await api.updateEpisode(id, updates); } catch (err) { console.error(err); }
-  };
-  const deleteEpisode = async (id: number) => {
-    try { setEpisodes(p => p.filter(e => e.id !== id)); await api.deleteEpisode(id); } catch (err) { console.error(err); }
-  };
-
-  const addGuest = async (g: Omit<api.Guest, 'id' | 'created_at'>) => {
-    try { const created = await api.createGuest(g); setGuests(p => [...p, created]); } catch (err) { console.error(err); }
-  };
-  const updateGuest = async (id: number, updates: Partial<api.Guest>) => {
-    try { setGuests(p => p.map(g => g.id === id ? { ...g, ...updates } : g)); await api.updateGuest(id, updates); } catch (err) { console.error(err); }
-  };
-
-  const addTopicDrop = async (d: Omit<api.TopicDrop, 'id' | 'created_at'>) => {
-    try { const created = await api.createTopicDrop(d); setTopicDrops(p => [...p, created]); } catch (err) { console.error(err); }
-  };
-  const updateTopicDrop = async (id: number, updates: Partial<api.TopicDrop>) => {
-    try { setTopicDrops(p => p.map(d => d.id === id ? { ...d, ...updates } : d)); await api.updateTopicDrop(id, updates); } catch (err) { console.error(err); }
   };
 
   if (!authed) {
