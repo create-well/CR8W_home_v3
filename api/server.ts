@@ -107,33 +107,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── Sync ──────────────────────────────────────────────────────────────────
     if (resource === 'sync' && method === 'GET') {
+      // 1) Legacy KV data (non-migrated resources)
       const KEYS = [
         'cr8w_tasks','cr8w_stations','cr8w_forum','cr8w_messages',
         'cr8w_braindumps','cr8w_announcements','cr8w_forum_replies',
-        'cr8w_workshops','cr8w_workshop_programs','cr8w_workshop_resources',
-        'cr8w_coflow_dates','cr8w_coflow_checkins','cr8w_well_notes','cr8w_calendar_events',
+        'cr8w_workshop_programs','cr8w_workshop_resources',
+        'cr8w_coflow_dates','cr8w_well_notes','cr8w_calendar_events',
         'cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps',
-        'cr8w_pod_episodes','cr8w_pod_guests','cr8w_topic_drops',
-        'cr8w_applicants','cr8w_collaborators','cr8w_revenue_ops',
       ];
-      const { data, error } = await sb().from(TABLE).select('key,value').in('key', KEYS);
-      if (error) { res.status(500).json({ error: error.message }); return; }
+      const { data: kvRows, error: kvErr } = await sb().from(TABLE).select('key,value').in('key', KEYS);
+      if (kvErr) { res.status(500).json({ error: kvErr.message }); return; }
       const m: Record<string, any[]> = {};
-      for (const row of data ?? []) m[row.key] = parseList(row.value);
+      for (const row of kvRows ?? []) m[row.key] = parseList(row.value);
+
+      // 2) New table data (live Supabase tables)
+      const [
+        { data: episodesData, error: epErr },
+        { data: guestsData, error: gErr },
+        { data: topicDropsData, error: tdErr },
+        { data: coflowCheckinsData, error: cfErr },
+        { data: applicantsData, error: appErr },
+        { data: revenueOpsData, error: revErr },
+        { data: workshopsData, error: wsErr },
+        { data: profilesData, error: profErr },
+      ] = await Promise.all([
+        sb().from('episodes').select('*').order('episode_num', { ascending: false }),
+        sb().from('guests').select('*').order('created_at', { ascending: false }),
+        sb().from('topic_drops').select('*').order('created_at', { ascending: false }),
+        sb().from('coflow_checkins').select('*').order('created_at', { ascending: false }),
+        sb().from('applicants').select('*').order('created_at', { ascending: false }),
+        sb().from('revenue_ops').select('*').order('created_at', { ascending: false }),
+        sb().from('workshops').select('*').order('workshop_date', { ascending: false }),
+        sb().from('profiles').select('*').order('created_at', { ascending: false }),
+      ]);
+
+      // Log errors but don't fail the whole sync
+      if (epErr) console.error('[sync] episodes error:', epErr.message);
+      if (gErr) console.error('[sync] guests error:', gErr.message);
+      if (tdErr) console.error('[sync] topic_drops error:', tdErr.message);
+      if (cfErr) console.error('[sync] coflow_checkins error:', cfErr.message);
+      if (appErr) console.error('[sync] applicants error:', appErr.message);
+      if (revErr) console.error('[sync] revenue_ops error:', revErr.message);
+      if (wsErr) console.error('[sync] workshops error:', wsErr.message);
+      if (profErr) console.error('[sync] profiles error:', profErr.message);
+
       res.json({
+        // Legacy KV resources
         tasks: m['cr8w_tasks']??[], stations: m['cr8w_stations']??[],
         forum: m['cr8w_forum']??[], messages: m['cr8w_messages']??[],
         braindumps: m['cr8w_braindumps']??[], announcements: m['cr8w_announcements']??[],
-        forumReplies: m['cr8w_forum_replies']??[], workshops: m['cr8w_workshops']??[],
+        forumReplies: m['cr8w_forum_replies']??[],
         workshopPrograms: m['cr8w_workshop_programs']??[], workshopResources: m['cr8w_workshop_resources']??[],
-        coflowDates: m['cr8w_coflow_dates']??[], coflowCheckins: m['cr8w_coflow_checkins']??[],
+        coflowDates: m['cr8w_coflow_dates']??[],
         wellNotes: m['cr8w_well_notes']??[], calendarEvents: m['cr8w_calendar_events']??[],
         chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[],
         wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
-        episodes: m['cr8w_pod_episodes']??[], guests: m['cr8w_pod_guests']??[],
-        topicDrops: m['cr8w_topic_drops']??[],
-        applicants: m['cr8w_applicants']??[], collaborators: m['cr8w_collaborators']??[],
-        revenueOps: m['cr8w_revenue_ops']??[],
+        // New table resources (real-time, table-backed)
+        episodes: episodesData ?? [],
+        guests: guestsData ?? [],
+        topicDrops: topicDropsData ?? [],
+        coflowCheckins: coflowCheckinsData ?? [],
+        applicants: applicantsData ?? [],
+        revenueOps: revenueOpsData ?? [],
+        workshops: workshopsData ?? [],
+        profiles: profilesData ?? [],
       });
       return;
     }
