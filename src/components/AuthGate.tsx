@@ -31,8 +31,11 @@ export function AuthGate({ onAuthenticated }: Props) {
       background: 'var(--cream)', padding: 16,
     }}>
       <div className="card" style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>◎</div>
-        <h1 style={{ marginBottom: 4 }}>create well</h1>
+        <img
+          src="/create-well-wordmark.png"
+          alt="Create Well"
+          style={{ height: 40, width: 'auto', display: 'block', margin: '0 auto 12px' }}
+        />
         <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>
           Collective dashboard. Who are you today?
         </p>
