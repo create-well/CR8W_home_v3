@@ -1,9 +1,10 @@
 import React from 'react';
-import type { Task, Workshop, CoFlowDate, WellNote, Announcement, BrainDump } from '../api';
+import type { Task, CoFlowDate, WellNote, Announcement, BrainDump } from '../api';
+import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
 
 interface Props {
   tasks: Task[];
-  workshops: Workshop[];
+  workshops: SbWorkshop[];
   coFlowDates: CoFlowDate[];
   wellNotes: WellNote[];
   announcements: Announcement[];
@@ -13,8 +14,8 @@ interface Props {
 
 export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcements, brainDumps, onNavigate }: Props) {
   const upcomingWorkshops = workshops
-    .filter(w => new Date(w.date) >= new Date())
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter(w => w.workshopDate && new Date(w.workshopDate) >= new Date())
+    .sort((a, b) => new Date(a.workshopDate).getTime() - new Date(b.workshopDate).getTime())
     .slice(0, 3);
 
   const upcomingCoFlow = coFlowDates
@@ -102,11 +103,12 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
               }}>
                 <div style={{ fontWeight: 600 }}>{w.title}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  {new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })} · {w.location} · {w.status}
+                  {w.workshopDate ? new Date(w.workshopDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }) : 'TBD'}
+                  {w.location ? ` · ${w.location}` : ''} · {w.status}
                 </div>
                 <div style={{ marginTop: 6 }}>
-                  <span className="badge badge-rust">{w.facilitator}</span>
-                  <span className="badge badge-clay" style={{ marginLeft: 6 }}>{w.participants}/{w.capacity}</span>
+                  <span className="badge badge-clay">{w.status}</span>
+                  <span className="badge badge-camel" style={{ marginLeft: 6 }}>{w.attendees}/{w.capacity}</span>
                 </div>
               </div>
             ))}

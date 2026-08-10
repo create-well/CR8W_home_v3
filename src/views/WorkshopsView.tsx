@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
-import type { Workshop, WorkshopProgram, WorkshopResource, Applicant } from '../api';
+import type { SbWorkshop, SbApplicant } from '../hooks/useWorkshopRealtime';
 
 interface Props {
-  workshops: Workshop[];
-  programs: WorkshopProgram[];
-  resources: WorkshopResource[];
-  applicants: Applicant[];
-  onAddWorkshop: (w: Omit<Workshop, 'id' | 'created_at'>) => void;
-  onUpdateWorkshop: (id: number, updates: Partial<Workshop>) => void;
-  onDeleteWorkshop: (id: number) => void;
-  onAddApplicant: (a: Omit<Applicant, 'id' | 'created_at'>) => void;
-  onUpdateApplicant: (id: number, updates: Partial<Applicant>) => void;
+  workshops: SbWorkshop[];
+  applicants: SbApplicant[];
+  onAddWorkshop: (w: Omit<SbWorkshop, 'id' | 'created_at' | 'attendees' | 'createdBy'>) => void;
+  onUpdateWorkshop: (id: string, updates: Partial<SbWorkshop>) => void;
+  onDeleteWorkshop: (id: string) => void;
+  onAddApplicant: (a: Omit<SbApplicant, 'id' | 'created_at'>) => void;
+  onUpdateApplicant: (id: string, updates: Partial<SbApplicant>) => void;
 }
 
-const STAGES: { key: Applicant['stage']; label: string; color: string }[] = [
+const APPLICANT_STAGES = [
   { key: 'applied', label: 'Applied', color: 'var(--info)' },
   { key: 'vetted', label: 'Vetted', color: 'var(--camel)' },
   { key: 'scheduled', label: 'Scheduled', color: 'var(--success)' },
@@ -22,8 +20,10 @@ const STAGES: { key: Applicant['stage']; label: string; color: string }[] = [
   { key: 'declined', label: 'Declined', color: 'var(--text-muted)' },
 ];
 
-export function WorkshopsView({ workshops, programs, resources, applicants, onAddWorkshop, onUpdateWorkshop, onDeleteWorkshop, onAddApplicant, onUpdateApplicant }: Props) {
-  const [tab, setTab] = useState<'pipeline' | 'workshops' | 'programs' | 'resources'>('pipeline');
+const WORKSHOP_STATUSES = ['ideation', 'planning', 'scheduled', 'active', 'completed', 'cancelled'];
+
+export function WorkshopsView({ workshops, applicants, onAddWorkshop, onUpdateWorkshop, onDeleteWorkshop, onAddApplicant, onUpdateApplicant }: Props) {
+  const [tab, setTab] = useState<'pipeline' | 'workshops'>('pipeline');
   const [showAddWorkshop, setShowAddWorkshop] = useState(false);
   const [showAddApplicant, setShowAddApplicant] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -31,18 +31,16 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
   // Workshop form state
   const [wTitle, setWTitle] = useState('');
   const [wDesc, setWDesc] = useState('');
-  const [wFacilitator, setWFacilitator] = useState<Workshop['facilitator']>('monny');
   const [wDate, setWDate] = useState('');
+  const [wTime, setWTime] = useState('');
   const [wCapacity, setWCapacity] = useState(20);
   const [wLocation, setWLocation] = useState('');
-  const [wTags, setWTags] = useState('');
+  const [wStatus, setWStatus] = useState('planning');
 
   // Applicant form state
   const [aName, setAName] = useState('');
   const [aEmail, setAEmail] = useState('');
-  const [aPhone, setAPhone] = useState('');
   const [aWorkshopId, setAWorkshopId] = useState('');
-  const [aSource, setASource] = useState<Applicant['source']>('form');
   const [aNotes, setANotes] = useState('');
 
   const filteredWorkshops = filterStatus === 'all'
@@ -52,27 +50,26 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
   const handleAddWorkshop = () => {
     if (!wTitle || !wDate) return;
     onAddWorkshop({
-      title: wTitle, description: wDesc, facilitator: wFacilitator,
-      date: wDate, capacity: wCapacity, participants: 0,
-      location: wLocation, tags: wTags.split(',').map(t => t.trim()).filter(Boolean),
-      status: 'planning',
+      title: wTitle, description: wDesc,
+      workshopDate: wDate, workshopTime: wTime,
+      capacity: wCapacity, location: wLocation, status: wStatus,
     });
-    setWTitle(''); setWDesc(''); setWFacilitator('monny'); setWDate(''); setWCapacity(20); setWLocation(''); setWTags('');
+    setWTitle(''); setWDesc(''); setWDate(''); setWTime(''); setWCapacity(20); setWLocation(''); setWStatus('planning');
     setShowAddWorkshop(false);
   };
 
   const handleAddApplicant = () => {
     if (!aName || !aEmail) return;
     onAddApplicant({
-      name: aName, email: aEmail, phone: aPhone || undefined,
-      workshopId: aWorkshopId ? parseInt(aWorkshopId) : undefined,
-      stage: 'applied', source: aSource, notes: aNotes,
+      fullName: aName, email: aEmail,
+      workshopId: aWorkshopId || null,
+      status: 'applied', applicationData: { notes: aNotes },
     });
-    setAName(''); setAEmail(''); setAPhone(''); setAWorkshopId(''); setASource('form'); setANotes('');
+    setAName(''); setAEmail(''); setAWorkshopId(''); setANotes('');
     setShowAddApplicant(false);
   };
 
-  const applicantsByStage = (stage: Applicant['stage']) => applicants.filter(a => a.stage === stage);
+  const applicantsByStage = (stage: string) => applicants.filter(a => a.status === stage);
 
   return (
     <div>
@@ -85,7 +82,7 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
-        {(['pipeline', 'workshops', 'programs', 'resources'] as const).map(t => (
+        {(['pipeline', 'workshops'] as const).map(t => (
           <button
             key={t}
             className={tab === t ? 'btn-primary' : 'btn-ghost'}
@@ -100,7 +97,7 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
       {tab === 'pipeline' && (
         <div>
           <div className="pipeline">
-            {STAGES.map(s => (
+            {APPLICANT_STAGES.map(s => (
               <div key={s.key} className="pipeline-col">
                 <div className="pipeline-header" style={{ color: s.color }}>
                   <span>{s.label}</span>
@@ -108,19 +105,21 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
                 </div>
                 {applicantsByStage(s.key).map(a => (
                   <div key={a.id} className="pipeline-card">
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.name}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.fullName}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                      {a.email} · {a.source}
+                      {a.email}
                     </div>
-                    {a.assignedTo && (
-                      <span className="badge badge-info" style={{ marginTop: 6 }}>Assigned: {a.assignedTo}</span>
+                    {a.workshopId && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--camel)', marginTop: 4 }}>
+                        {workshops.find(w => w.id === a.workshopId)?.title || 'Unknown workshop'}
+                      </div>
                     )}
                     <select
                       style={{ marginTop: 8, width: '100%', padding: '6px 8px', fontSize: '0.8rem' }}
-                      value={a.stage}
-                      onChange={e => onUpdateApplicant(a.id, { stage: e.target.value as Applicant['stage'] })}
+                      value={a.status}
+                      onChange={e => onUpdateApplicant(a.id, { status: e.target.value })}
                     >
-                      {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                      {APPLICANT_STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                     </select>
                   </div>
                 ))}
@@ -140,11 +139,7 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
           <div style={{ marginBottom: 16 }}>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ padding: '8px 12px' }}>
               <option value="all">All statuses</option>
-              <option value="ideation">Ideation</option>
-              <option value="planning">Planning</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
+              {WORKSHOP_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             </select>
           </div>
           <div className="view-grid">
@@ -160,73 +155,17 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
                   {w.description?.slice(0, 120)}{w.description && w.description.length > 120 ? '...' : ''}
                 </p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <span className="badge badge-rust">{w.facilitator}</span>
                   <span className="badge badge-clay">{w.status}</span>
-                  <span className="badge badge-camel">{w.participants}/{w.capacity}</span>
+                  <span className="badge badge-camel">{w.attendees}/{w.capacity}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {w.location}
+                  {w.workshopDate ? new Date(w.workshopDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date'}
+                  {w.workshopTime ? ` · ${w.workshopTime}` : ''}
+                  {w.location ? ` · ${w.location}` : ''}
                 </div>
-                {w.googleDocLink && (
-                  <a href={w.googleDocLink} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', display: 'block', marginTop: 8 }}>
-                    📄 Google Doc →
-                  </a>
-                )}
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {tab === 'programs' && (
-        <div className="view-grid">
-          {programs.map(p => (
-            <div key={p.id} className="card">
-              <h3>{p.seriesName}</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description}</p>
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4 }}>Sessions:</div>
-                {p.sessionOutline.map(s => (
-                  <div key={s.number} style={{ fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid rgba(58,58,58,0.05)' }}>
-                    {s.number}. {s.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {programs.length === 0 && (
-            <div className="card view-full" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              No programs yet. Build one from a workshop.
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'resources' && (
-        <div>
-          <table className="cr8w-table">
-            <thead>
-              <tr>
-                <th>Resource</th>
-                <th>Type</th>
-                <th>Author</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resources.map(r => (
-                <tr key={r.id}>
-                  <td><a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a></td>
-                  <td><span className="badge badge-info">{r.type}</span></td>
-                  <td>{r.author}</td>
-                  <td>{r.lastUpdated}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {resources.length === 0 && (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 20 }}>No resources yet.</p>
-          )}
         </div>
       )}
 
@@ -248,18 +187,12 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Facilitator</label>
-                <select value={wFacilitator} onChange={e => setWFacilitator(e.target.value as Workshop['facilitator'])}>
-                  <option value="monny">Monny</option>
-                  <option value="sunshine">Sunshine</option>
-                  <option value="bingle">Bingle</option>
-                  <option value="omar">Omar</option>
-                  <option value="pia">Pia</option>
-                </select>
-              </div>
-              <div className="form-group">
                 <label>Date</label>
                 <input type="date" value={wDate} onChange={e => setWDate(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Time</label>
+                <input type="time" value={wTime} onChange={e => setWTime(e.target.value)} />
               </div>
             </div>
             <div className="form-row">
@@ -273,8 +206,10 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
               </div>
             </div>
             <div className="form-group">
-              <label>Tags (comma separated)</label>
-              <input value={wTags} onChange={e => setWTags(e.target.value)} placeholder="wellshop, journaling, etc" />
+              <label>Status</label>
+              <select value={wStatus} onChange={e => setWStatus(e.target.value)}>
+                {WORKSHOP_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
             </div>
             <button className="btn-primary" style={{ width: '100%', marginTop: 8 }} onClick={handleAddWorkshop}>
               Create Workshop
@@ -300,26 +235,12 @@ export function WorkshopsView({ workshops, programs, resources, applicants, onAd
               <input type="email" value={aEmail} onChange={e => setAEmail(e.target.value)} placeholder="email@example.com" />
             </div>
             <div className="form-group">
-              <label>Phone</label>
-              <input value={aPhone} onChange={e => setAPhone(e.target.value)} placeholder="+1..." />
-            </div>
-            <div className="form-group">
               <label>Workshop</label>
               <select value={aWorkshopId} onChange={e => setAWorkshopId(e.target.value)}>
                 <option value="">None / General</option>
                 {workshops.map(w => (
                   <option key={w.id} value={w.id}>{w.title}</option>
                 ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Source</label>
-              <select value={aSource} onChange={e => setASource(e.target.value as Applicant['source'])}>
-                <option value="form">Application Form</option>
-                <option value="referral">Referral</option>
-                <option value="instagram">Instagram</option>
-                <option value="podcast">Podcast</option>
-                <option value="event">Event</option>
               </select>
             </div>
             <div className="form-group">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as api from './api';
-import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, Workshop, WorkshopProgram, WorkshopResource, CoFlowDate, CoFlowCheckin, WellNote, Applicant, Collaborator, RevenueOp } from './api';
+import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote } from './api';
 
+import { supabase } from './lib/supabase';
 import { TopNav } from './components/TopNav';
 import { AuthGate } from './components/AuthGate';
 import { HubView } from './views/HubView';
@@ -13,10 +14,13 @@ import { TeamView } from './views/TeamView';
 import { RevenueView } from './views/RevenueView';
 import { ImessageTerminal } from './components/iMessageTerminal';
 import { usePodcastRealtime } from './hooks/usePodcastRealtime';
+import { useCoFlowRealtime } from './hooks/useCoFlowRealtime';
+import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
+type Role = 'core' | 'co-creator' | 'public';
 
-const VIEWS: { key: View; label: string; icon: string }[] = [
+const ALL_VIEWS: { key: View; label: string; icon: string }[] = [
   { key: 'hub', label: 'Hub', icon: '◎' },
   { key: 'podcast', label: 'Podcast', icon: '🎙️' },
   { key: 'workshops', label: 'Workshops', icon: '🌿' },
@@ -26,9 +30,31 @@ const VIEWS: { key: View; label: string; icon: string }[] = [
   { key: 'revenue', label: 'Revenue', icon: '✦' },
 ];
 
+// Map auth profile key → Supabase username
+const PROFILE_KEY_TO_USERNAME: Record<string, string> = {
+  monny: 'mb',
+  sunshine: 'sunshine',
+  bingle: 'bingle',
+  omar: 'omar',
+  pia: 'pia',
+};
+
+function getDefaultRole(profile: string): Role {
+  if (['monny', 'sunshine', 'bingle', 'omar'].includes(profile)) return 'core';
+  if (profile === 'pia') return 'co-creator';
+  return 'co-creator';
+}
+
+function viewsForRole(role: Role): View[] {
+  if (role === 'core') return ['hub', 'podcast', 'workshops', 'well', 'coflow', 'team', 'revenue'];
+  if (role === 'co-creator') return ['hub', 'workshops', 'well'];
+  return ['hub'];
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(false);
   const [profile, setProfile] = useState<string>('');
+  const [role, setRole] = useState<Role>('public');
   const [currentView, setCurrentView] = useState<View>('hub');
   const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('ok');
   const [syncTime, setSyncTime] = useState('');
@@ -42,15 +68,10 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [brainDumps, setBrainDumps] = useState<BrainDump[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [workshops, setWorkshops] = useState<Workshop[]>([]);
-  const [workshopPrograms, setWorkshopPrograms] = useState<WorkshopProgram[]>([]);
-  const [workshopResources, setWorkshopResources] = useState<WorkshopResource[]>([]);
   const [coFlowDates, setCoFlowDates] = useState<CoFlowDate[]>([]);
-  const [coFlowCheckins, setCoFlowCheckins] = useState<CoFlowCheckin[]>([]);
   const [wellNotes, setWellNotes] = useState<WellNote[]>([]);
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [revenueOps, setRevenueOps] = useState<RevenueOp[]>([]);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [revenueOps, setRevenueOps] = useState<any[]>([]);
 
   // Podcast data — live-synced via Supabase real-time
   const {
@@ -66,6 +87,25 @@ export default function App() {
     updateTopicDrop,
   } = usePodcastRealtime();
 
+  // CoFlow check-ins — live-synced via Supabase real-time
+  const {
+    checkins: coFlowCheckins,
+    addCheckin,
+    updateCheckin,
+    deleteCheckin,
+  } = useCoFlowRealtime();
+
+  // Workshops + applicants — live-synced via Supabase real-time
+  const {
+    workshops: sbWorkshops,
+    applicants: sbApplicants,
+    addWorkshop: addSbWorkshop,
+    updateWorkshop: updateSbWorkshop,
+    deleteWorkshop: deleteSbWorkshop,
+    addApplicant: addSbApplicant,
+    updateApplicant: updateSbApplicant,
+  } = useWorkshopRealtime();
+
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -73,6 +113,34 @@ export default function App() {
   const silentFailCount = useRef(0);
   const dataLoadedRef = useRef(false);
 
+  // ── Fetch role from Supabase after auth ──────────────────────────────────────
+  useEffect(() => {
+    if (!authed || !profile) return;
+    async function fetchRole() {
+      const username = PROFILE_KEY_TO_USERNAME[profile] || profile;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('username', username)
+        .single();
+      if (error || !data?.role) {
+        setRole(getDefaultRole(profile));
+      } else {
+        setRole(data.role as Role);
+      }
+    }
+    fetchRole();
+  }, [authed, profile]);
+
+  // ── Ensure current view is allowed for role ──────────────────────────────────
+  useEffect(() => {
+    const allowed = viewsForRole(role);
+    if (!allowed.includes(currentView)) {
+      setCurrentView(allowed[0] || 'hub');
+    }
+  }, [role, currentView]);
+
+  // ── Legacy sync polling ──────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchSync(silent = false) {
       try {
@@ -85,13 +153,8 @@ export default function App() {
         setMessages(data.messages || []);
         setBrainDumps(data.braindumps || []);
         setAnnouncements(data.announcements || []);
-        setWorkshops(data.workshops || []);
-        setWorkshopPrograms(data.workshopPrograms || []);
-        setWorkshopResources(data.workshopResources || []);
         setCoFlowDates(data.coflowDates || []);
-        setCoFlowCheckins(data.coflowCheckins || []);
         setWellNotes(data.wellNotes || []);
-        setApplicants(data.applicants || []);
         setCollaborators(data.collaborators || []);
         setRevenueOps(data.revenueOps || []);
         setSyncStatus('ok');
@@ -132,15 +195,12 @@ export default function App() {
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [currentView]);
 
-  // ── Actions ─────────────────────────────────────────────────────────────────
+  // ── Actions (legacy API) ─────────────────────────────────────────────────────
   const addTask = async (item: Omit<api.Task, 'id' | 'created_at'>) => {
     try { const created = await api.createTask(item); setTasks(p => [...p, created]); } catch (e) { console.error(e); }
   };
   const updateTask = async (id: number, updates: Partial<api.Task>) => {
     try { setTasks(p => p.map(t => t.id === id ? { ...t, ...updates } : t)); await api.updateTask(id, updates); } catch (e) { console.error(e); }
-  };
-  const deleteTask = async (id: number) => {
-    try { setTasks(p => p.filter(t => t.id !== id)); await api.deleteTask(id); } catch (e) { console.error(e); }
   };
 
   const addForumPost = async (post: Omit<api.ForumPost, 'id' | 'created_at'>) => {
@@ -158,25 +218,11 @@ export default function App() {
     try { const created = await api.createBrainDump(dump); setBrainDumps(p => [created, ...p]); } catch (e) { console.error(e); }
   };
 
-  const addWorkshop = async (w: Omit<api.Workshop, 'id' | 'created_at'>) => {
-    try { const created = await api.createWorkshop(w); setWorkshops(p => [...p, created]); } catch (e) { console.error(e); }
-  };
-  const updateWorkshop = async (id: number, updates: Partial<api.Workshop>) => {
-    try { setWorkshops(p => p.map(w => w.id === id ? { ...w, ...updates } : w)); await api.updateWorkshop(id, updates); } catch (e) { console.error(e); }
-  };
-  const deleteWorkshop = async (id: number) => {
-    try { setWorkshops(p => p.filter(w => w.id !== id)); await api.deleteWorkshop(id); } catch (e) { console.error(e); }
-  };
-
   const addCoFlowDate = async (d: Omit<api.CoFlowDate, 'id' | 'created_at'>) => {
     try { const created = await api.createCoFlowDate(d); setCoFlowDates(p => [...p, created]); } catch (e) { console.error(e); }
   };
   const updateCoFlowDate = async (id: number, updates: Partial<api.CoFlowDate>) => {
     try { setCoFlowDates(p => p.map(d => d.id === id ? { ...d, ...updates } : d)); await api.updateCoFlowDate(id, updates); } catch (e) { console.error(e); }
-  };
-
-  const addCoFlowCheckin = async (c: Omit<api.CoFlowCheckin, 'id' | 'created_at'>) => {
-    try { const created = await api.createCoFlowCheckin(c); setCoFlowCheckins(p => [...p, created]); } catch (e) { console.error(e); }
   };
 
   const addWellNote = async (content: string) => {
@@ -186,27 +232,24 @@ export default function App() {
     try { const note = wellNotes.find(n => n.id === id); if (!note) return; const updated = await api.updateWellNote(id, { landed: (note.landed || 0) + 1 }); setWellNotes(p => p.map(n => n.id === id ? updated : n)); } catch (e) { console.error(e); }
   };
 
-  // v3 actions
-  const addApplicant = async (a: Omit<api.Applicant, 'id' | 'created_at'>) => {
-    try { const created = await api.createApplicant(a); setApplicants(p => [...p, created]); } catch (e) { console.error(e); }
-  };
-  const updateApplicant = async (id: number, updates: Partial<api.Applicant>) => {
-    try { setApplicants(p => p.map(a => a.id === id ? { ...a, ...updates } : a)); await api.updateApplicant(id, updates); } catch (e) { console.error(e); }
-  };
-
-  const addCollaborator = async (c: Omit<api.Collaborator, 'id' | 'created_at'>) => {
+  // v3 actions (legacy API)
+  const addCollaborator = async (c: Omit<any, 'id' | 'created_at'>) => {
     try { const created = await api.createCollaborator(c); setCollaborators(p => [...p, created]); } catch (e) { console.error(e); }
   };
-  const updateCollaborator = async (id: number, updates: Partial<api.Collaborator>) => {
+  const updateCollaborator = async (id: number, updates: Partial<any>) => {
     try { setCollaborators(p => p.map(c => c.id === id ? { ...c, ...updates } : c)); await api.updateCollaborator(id, updates); } catch (e) { console.error(e); }
   };
 
-  const addRevenueOp = async (r: Omit<api.RevenueOp, 'id' | 'created_at'>) => {
+  const addRevenueOp = async (r: Omit<any, 'id' | 'created_at'>) => {
     try { const created = await api.createRevenueOp(r); setRevenueOps(p => [...p, created]); } catch (e) { console.error(e); }
   };
-  const updateRevenueOp = async (id: number, updates: Partial<api.RevenueOp>) => {
+  const updateRevenueOp = async (id: number, updates: Partial<any>) => {
     try { setRevenueOps(p => p.map(r => r.id === id ? { ...r, ...updates } : r)); await api.updateRevenueOp(id, updates); } catch (e) { console.error(e); }
   };
+
+  // ── Filter views by role ─────────────────────────────────────────────────────
+  const allowedViews = viewsForRole(role);
+  const visibleViews = ALL_VIEWS.filter(v => allowedViews.includes(v.key));
 
   if (!authed) {
     return <AuthGate onAuthenticated={(p) => { setAuthed(true); setProfile(p); }} />;
@@ -215,7 +258,7 @@ export default function App() {
   return (
     <div className="cr8w-app">
       <TopNav
-        views={VIEWS}
+        views={visibleViews}
         currentView={currentView}
         onNavigate={(v: string) => setCurrentView(v as View)}
         syncStatus={syncStatus}
@@ -235,7 +278,7 @@ export default function App() {
       {dataLoaded && currentView === 'hub' && (
         <HubView
           tasks={tasks}
-          workshops={workshops}
+          workshops={sbWorkshops}
           coFlowDates={coFlowDates}
           wellNotes={wellNotes}
           announcements={announcements}
@@ -261,15 +304,13 @@ export default function App() {
 
       {dataLoaded && currentView === 'workshops' && (
         <WorkshopsView
-          workshops={workshops}
-          programs={workshopPrograms}
-          resources={workshopResources}
-          applicants={applicants}
-          onAddWorkshop={addWorkshop}
-          onUpdateWorkshop={updateWorkshop}
-          onDeleteWorkshop={deleteWorkshop}
-          onAddApplicant={addApplicant}
-          onUpdateApplicant={updateApplicant}
+          workshops={sbWorkshops}
+          applicants={sbApplicants}
+          onAddWorkshop={addSbWorkshop}
+          onUpdateWorkshop={updateSbWorkshop}
+          onDeleteWorkshop={deleteSbWorkshop}
+          onAddApplicant={addSbApplicant}
+          onUpdateApplicant={updateSbApplicant}
         />
       )}
 
@@ -294,7 +335,7 @@ export default function App() {
           tasks={tasks}
           onAddDate={addCoFlowDate}
           onUpdateDate={updateCoFlowDate}
-          onAddCheckin={addCoFlowCheckin}
+          onAddCheckin={addCheckin}
         />
       )}
 
@@ -311,7 +352,7 @@ export default function App() {
       {dataLoaded && currentView === 'revenue' && (
         <RevenueView
           opportunities={revenueOps}
-          workshops={workshops}
+          workshops={sbWorkshops}
           onAddOp={addRevenueOp}
           onUpdateOp={updateRevenueOp}
         />

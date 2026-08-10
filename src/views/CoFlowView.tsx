@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
-import type { CoFlowDate, CoFlowCheckin, Task } from '../api';
+import type { CoFlowDate, Task } from '../api';
+import type { SbCheckin } from '../hooks/useCoFlowRealtime';
 
 interface Props {
   dates: CoFlowDate[];
-  checkins: CoFlowCheckin[];
+  checkins: SbCheckin[];
   tasks: Task[];
   onAddDate: (d: Omit<CoFlowDate, 'id' | 'created_at'>) => void;
   onUpdateDate: (id: number, updates: Partial<CoFlowDate>) => void;
-  onAddCheckin: (c: Omit<CoFlowCheckin, 'id' | 'created_at'>) => void;
+  onAddCheckin: (c: Omit<SbCheckin, 'id' | 'created_at'>) => void;
 }
 
-const MOODS = [
-  { key: 'fire', emoji: '🔥', label: 'On fire' },
-  { key: 'sun', emoji: '☀️', label: 'Bright' },
-  { key: 'cloud', emoji: '☁️', label: 'Neutral' },
-  { key: 'rain', emoji: '🌧️', label: 'Low' },
-  { key: 'storm', emoji: '⛈️', label: 'Stormy' },
-];
+const PROFILE_NAMES: Record<string, string> = {
+  mb: 'Monny',
+  sunshine: 'Sunshine',
+  bingle: 'Bingle',
+  omar: 'Omar',
+  pia: 'Pia',
+};
 
 export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, onAddCheckin }: Props) {
   const [tab, setTab] = useState<'meetings' | 'checkins'>('meetings');
@@ -31,14 +32,13 @@ export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, on
   const [dHost, setDHost] = useState('');
   const [dTheme, setDTheme] = useState('');
 
-  // Checkin form
-  const [cWeekOf, setCWeekOf] = useState('');
-  const [cAuthor, setCAuthor] = useState('monny');
-  const [cConfirm, setCConfirm] = useState(false);
-  const [cLocation, setCLocation] = useState('');
-  const [cAgenda, setCAgenda] = useState('');
-  const [cMood, setCMood] = useState('');
-  const [cNotes, setCNotes] = useState('');
+  // Checkin form (Supabase schema)
+  const [cProfile, setCProfile] = useState('mb');
+  const [cBody, setCBody] = useState('');
+  const [cPulse, setCPulse] = useState('');
+  const [cBlockers, setCBlockers] = useState('');
+  const [cNeeds, setCNeeds] = useState('');
+  const [cMeetingDate, setCMeetingDate] = useState('');
 
   const upcoming = dates.filter(d => d.status === 'upcoming').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const archived = dates.filter(d => d.status === 'archived').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -55,13 +55,16 @@ export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, on
   };
 
   const handleAddCheckin = () => {
-    if (!cWeekOf) return;
+    if (!cMeetingDate) return;
     onAddCheckin({
-      weekOf: cWeekOf, author: cAuthor, confirmTime: cConfirm,
-      locationSuggestion: cLocation, agendaItems: cAgenda.split('\n').filter(Boolean),
-      mood: cMood || undefined, notes: cNotes || undefined,
+      profileId: cProfile,
+      bodyStatus: cBody,
+      creativePulse: cPulse,
+      blockers: cBlockers,
+      needs: cNeeds,
+      meetingDate: cMeetingDate,
     });
-    setCWeekOf(''); setCAuthor('monny'); setCConfirm(false); setCLocation(''); setCAgenda(''); setCMood(''); setCNotes('');
+    setCProfile('mb'); setCBody(''); setCPulse(''); setCBlockers(''); setCNeeds(''); setCMeetingDate('');
     setShowAddCheckin(false);
   };
 
@@ -139,47 +142,55 @@ export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, on
       {tab === 'checkins' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h2>PlayD8s Check-ins</h2>
+            <h2>CoFlow Check-ins</h2>
             <button className="btn-primary" onClick={() => setShowAddCheckin(true)}>+ Check-in</button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {checkins.sort((a, b) => new Date(b.weekOf).getTime() - new Date(a.weekOf).getTime()).map(c => (
+            {checkins.sort((a, b) => new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime()).map(c => (
               <div key={c.id} className="card" style={{ background: 'var(--cream)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span className="badge badge-rust">{c.author}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span className="badge badge-rust">{PROFILE_NAMES[c.profileId] || c.profileId}</span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Week of {new Date(c.weekOf).toLocaleDateString()}
+                    {c.meetingDate ? new Date(c.meetingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'}
                   </span>
                 </div>
-                {c.mood && (
+
+                {c.bodyStatus && (
                   <div style={{ marginBottom: 8 }}>
-                    {MOODS.find(m => m.key === c.mood)?.emoji} {MOODS.find(m => m.key === c.mood)?.label}
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--text-muted)' }}>Body</span>
+                    <div style={{ fontSize: '0.9rem', marginTop: 2 }}>{c.bodyStatus}</div>
                   </div>
                 )}
-                <div style={{ fontSize: '0.85rem', marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600 }}>Time confirmed?</span> {c.confirmTime ? '✅ Yes' : '⚠️ Needs adjusting'}
-                </div>
-                {c.locationSuggestion && (
-                  <div style={{ fontSize: '0.85rem', marginBottom: 8 }}>
-                    <span style={{ fontWeight: 600 }}>Location:</span> {c.locationSuggestion}
+
+                {c.creativePulse && (
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--text-muted)' }}>Creative Pulse</span>
+                    <div style={{ fontSize: '0.9rem', marginTop: 2 }}>{c.creativePulse}</div>
                   </div>
                 )}
-                {c.agendaItems && c.agendaItems.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 600 }}>Agenda items:</div>
-                    {c.agendaItems.map((item, i) => (
-                      <div key={i} style={{ fontSize: '0.8rem', padding: '2px 0' }}>• {item}</div>
-                    ))}
+
+                {c.blockers && (
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--danger)' }}>Blockers</span>
+                    <div style={{ fontSize: '0.9rem', marginTop: 2 }}>{c.blockers}</div>
                   </div>
                 )}
-                {c.notes && (
-                  <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                    “{c.notes}”
+
+                {c.needs && (
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--success)' }}>Needs</span>
+                    <div style={{ fontSize: '0.9rem', marginTop: 2 }}>{c.needs}</div>
                   </div>
                 )}
               </div>
             ))}
+
+            {checkins.length === 0 && (
+              <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px' }}>
+                No check-ins yet. Add the first one before your next CoFlow.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -234,17 +245,13 @@ export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, on
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddCheckin(false); }}>
           <div className="modal-content">
             <div className="modal-header">
-              <span className="modal-title">✅ PlayD8s Check-in</span>
+              <span className="modal-title">🌊 CoFlow Check-in</span>
               <button className="modal-close" onClick={() => setShowAddCheckin(false)}>×</button>
             </div>
             <div className="form-group">
-              <label>Week of</label>
-              <input type="date" value={cWeekOf} onChange={e => setCWeekOf(e.target.value)} />
-            </div>
-            <div className="form-group">
               <label>Who</label>
-              <select value={cAuthor} onChange={e => setCAuthor(e.target.value)}>
-                <option value="monny">Monny</option>
+              <select value={cProfile} onChange={e => setCProfile(e.target.value)}>
+                <option value="mb">Monny</option>
                 <option value="sunshine">Sunshine</option>
                 <option value="bingle">Bingle</option>
                 <option value="omar">Omar</option>
@@ -252,37 +259,24 @@ export function CoFlowView({ dates, checkins, tasks, onAddDate, onUpdateDate, on
               </select>
             </div>
             <div className="form-group">
-              <label>Mood</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {MOODS.map(m => (
-                  <button
-                    key={m.key}
-                    className={cMood === m.key ? 'btn-primary' : 'btn-ghost'}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    onClick={() => setCMood(m.key)}
-                  >
-                    {m.emoji} {m.label}
-                  </button>
-                ))}
-              </div>
+              <label>Meeting date</label>
+              <input type="date" value={cMeetingDate} onChange={e => setCMeetingDate(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>
-                <input type="checkbox" checked={cConfirm} onChange={e => setCConfirm(e.target.checked)} style={{ marginRight: 6 }} />
-                Time confirmed
-              </label>
+              <label>Body status</label>
+              <input value={cBody} onChange={e => setCBody(e.target.value)} placeholder="How's your body today? Jaw clench? Breath?" />
             </div>
             <div className="form-group">
-              <label>Location suggestion</label>
-              <input value={cLocation} onChange={e => setCLocation(e.target.value)} placeholder="Where works for you?" />
+              <label>Creative pulse</label>
+              <input value={cPulse} onChange={e => setCPulse(e.target.value)} placeholder="What's alive creatively? What wants to move?" />
             </div>
             <div className="form-group">
-              <label>Agenda items (one per line)</label>
-              <textarea value={cAgenda} onChange={e => setCAgenda(e.target.value)} placeholder="What needs airtime?" style={{ minHeight: 60 }} />
+              <label>Blockers</label>
+              <textarea value={cBlockers} onChange={e => setCBlockers(e.target.value)} placeholder="What's damming the flow?" style={{ minHeight: 50 }} />
             </div>
             <div className="form-group">
-              <label>Notes</label>
-              <textarea value={cNotes} onChange={e => setCNotes(e.target.value)} placeholder="Anything else?" style={{ minHeight: 40 }} />
+              <label>Needs</label>
+              <textarea value={cNeeds} onChange={e => setCNeeds(e.target.value)} placeholder="What do you need from the team this week?" style={{ minHeight: 50 }} />
             </div>
             <button className="btn-primary" style={{ width: '100%' }} onClick={handleAddCheckin}>Submit Check-in</button>
           </div>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import type { RevenueOp, Workshop } from '../api';
+import type { RevenueOp } from '../api';
+import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
 
 interface Props {
   opportunities: RevenueOp[];
-  workshops: Workshop[];
+  workshops: SbWorkshop[];
   onAddOp: (r: Omit<RevenueOp, 'id' | 'created_at'>) => void;
   onUpdateOp: (id: number, updates: Partial<RevenueOp>) => void;
 }
