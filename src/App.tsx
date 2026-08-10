@@ -19,6 +19,7 @@ import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
 import { useWorkshopFeedbackRealtime } from './hooks/useWorkshopFeedbackRealtime';
 import { useCalendarRealtime } from './hooks/useCalendarRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
+import { useTasksRealtime } from './hooks/useTasksRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
@@ -64,8 +65,10 @@ export default function App() {
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // Data states (legacy API — polled)
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
+
+  // Tasks — live-synced via Supabase real-time (v3.1)
+  const { tasks, addTask, updateTask, deleteTask } = useTasksRealtime();
   const [forum, setForum] = useState<ForumPost[]>([]);
   const [forumReplies, setForumReplies] = useState<ForumReply[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -179,7 +182,6 @@ export default function App() {
       try {
         setSyncStatus('syncing');
         const data: SyncData = await api.sync();
-        setTasks(data.tasks || []);
         setStations(data.stations || []);
         setForum(data.forum || []);
         setForumReplies(data.forumReplies || []);
@@ -228,13 +230,6 @@ export default function App() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [currentView]);
 
   // ── Actions (legacy API) ─────────────────────────────────────────────────────
-  const addTask = async (item: Omit<api.Task, 'id' | 'created_at'>) => {
-    try { const created = await api.createTask(item); setTasks(p => [...p, created]); } catch (e) { console.error(e); }
-  };
-  const updateTask = async (id: number, updates: Partial<api.Task>) => {
-    try { setTasks(p => p.map(t => t.id === id ? { ...t, ...updates } : t)); await api.updateTask(id, updates); } catch (e) { console.error(e); }
-  };
-
   const addForumPost = async (post: Omit<api.ForumPost, 'id' | 'created_at'>) => {
     try { const created = await api.createForumPost(post); setForum(p => [created, ...p]); } catch (e) { console.error(e); }
   };

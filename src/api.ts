@@ -47,10 +47,6 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 // ── Existing endpoints (backward compatible) ──────────────────────────────────
 export const sync = () => req<SyncData>('GET', '/sync');
 
-export const getTasks = () => req<Task[]>('GET', '/tasks');
-export const createTask = (t: Omit<Task, 'id' | 'created_at'>) => req<Task>('POST', '/tasks', t);
-export const updateTask = (id: number, t: Partial<Task>) => req<Task>('PUT', `/tasks/${id}`, t);
-export const deleteTask = (id: number) => req<{ ok: boolean }>('DELETE', `/tasks/${id}`);
 
 export const getStations = () => req<Station[]>('GET', '/stations');
 export const createStation = (s: Omit<Station, 'id' | 'created_at'>) => req<Station>('POST', '/stations', s);
@@ -142,10 +138,19 @@ export const deleteTopicDrop = (id: string) => req<{ ok: boolean }>('DELETE', `/
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface Task {
-  id: number; person: string; title: string;
-  status: 'todo' | 'in_progress' | 'done' | 'blocked';
-  priority: 'high' | 'medium' | 'low';
-  due_date?: string; source?: string; category?: string; created_at?: string;
+  id: string;
+  title: string;
+  description?: string;
+  status: 'backlog' | 'todo' | 'in-progress' | 'in-review' | 'done' | 'blocked';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  assigneeId?: string;
+  createdBy?: string;
+  dueDate?: string;
+  tag?: string;
+  person?: string;
+  createdAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Station {

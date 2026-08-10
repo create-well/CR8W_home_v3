@@ -96,7 +96,7 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
               }}>
                 <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.title}</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  {t.status} · {t.priority} priority {t.due_date ? `· Due ${t.due_date}` : ''}
+                  {t.status} · {t.priority} priority {t.dueDate ? `· Due ${t.dueDate}` : ''}
                 </div>
               </div>
             ))}

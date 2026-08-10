@@ -56,7 +56,7 @@ export function TeamView({ collaborators, tasks, stations, onAddCollaborator, on
   const alumni = collaborators.filter(c => c.role === 'alumni');
 
   // Task counts by person
-  const taskCount = (name: string) => tasks.filter(t => t.person.toLowerCase() === name.toLowerCase() && t.status !== 'done').length;
+  const taskCount = (name: string) => tasks.filter(t => t.person?.toLowerCase() === name.toLowerCase() && t.status !== 'done').length;
   const stationCount = (name: string) => stations.filter(s => s.owner.toLowerCase() === name.toLowerCase()).length;
 
   return (
