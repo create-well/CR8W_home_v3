@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as api from './api';
-import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote, CalendarEventKV } from './api';
+import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote } from './api';
 
 import { supabase } from './lib/supabase';
 import { TopNav } from './components/TopNav';
@@ -17,6 +17,7 @@ import { usePodcastRealtime } from './hooks/usePodcastRealtime';
 import { useCoFlowRealtime } from './hooks/useCoFlowRealtime';
 import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
 import { useWorkshopFeedbackRealtime } from './hooks/useWorkshopFeedbackRealtime';
+import { useCalendarRealtime } from './hooks/useCalendarRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
@@ -72,8 +73,10 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [coFlowDates, setCoFlowDates] = useState<CoFlowDate[]>([]);
   const [wellNotes, setWellNotes] = useState<WellNote[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEventKV[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+
+  // Calendar events — live-synced via Supabase real-time (v3)
+  const { events: calendarEvents } = useCalendarRealtime();
 
   // Revenue ops — live-synced via Supabase real-time
   const { ops: revenueOps, addOp: addRevenueOp, updateOp: updateRevenueOp, deleteOp: deleteRevenueOp } = useRevenueRealtime();
@@ -185,7 +188,6 @@ export default function App() {
         setAnnouncements(data.announcements || []);
         setCoFlowDates(data.coflowDates || []);
         setWellNotes(data.wellNotes || []);
-        setCalendarEvents(data.calendarEvents || []);
         setCollaborators(data.collaborators || []);
         setSyncStatus('ok');
         silentFailCount.current = 0;
