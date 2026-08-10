@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task, CoFlowDate, WellNote, Announcement, BrainDump } from '../api';
+import type { Task, CoFlowDate, WellNote, Announcement, BrainDump, CalendarEventKV } from '../api';
 import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
 
 interface Props {
@@ -9,10 +9,11 @@ interface Props {
   wellNotes: WellNote[];
   announcements: Announcement[];
   brainDumps: BrainDump[];
+  calendarEvents: CalendarEventKV[];
   onNavigate: (v: string) => void;
 }
 
-export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcements, brainDumps, onNavigate }: Props) {
+export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcements, brainDumps, calendarEvents, onNavigate }: Props) {
   const upcomingWorkshops = workshops
     .filter(w => w.workshopDate && new Date(w.workshopDate) >= new Date())
     .sort((a, b) => new Date(a.workshopDate).getTime() - new Date(b.workshopDate).getTime())
@@ -26,6 +27,20 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
   const myTasks = tasks.filter(t => t.status !== 'done').slice(0, 5);
   const recentNotes = wellNotes.slice(0, 3);
   const activeAnnouncements = announcements.filter(a => a.active !== 0).slice(0, 3);
+
+  const upcomingEvents = calendarEvents
+    .filter(e => e.start && new Date(e.start) >= new Date(new Date().setHours(0,0,0,0)))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    .slice(0, 5);
+
+  const quickLinks = [
+    { label: 'Linktree', url: 'https://linktr.ee/brbcreatingwell', emoji: '🔗' },
+    { label: 'About Site', url: 'https://aboutcreatewell.netlify.app/', emoji: '🌐' },
+    { label: 'Instagram', url: 'https://instagram.com/brbcreatingwell', emoji: '📸' },
+    { label: 'Working Library', url: 'https://drive.google.com/drive/u/2/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a', emoji: '📁' },
+    { label: 'Playdates', url: 'https://drive.google.com/drive/u/2/folders/13QojR2pqwXUtdverYBpW2HDaIk-gjp-m', emoji: '🎨' },
+    { label: 'Supabase', url: 'https://app.supabase.com/project/axntibrdivccycxdwlzk', emoji: '⚡' },
+  ];
 
   return (
     <div className="view-grid">
@@ -145,6 +160,35 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
         </button>
       </div>
 
+      {/* Calendar Events */}
+      <div className="card">
+        <h3>📅 Upcoming</h3>
+        {upcomingEvents.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No calendar events synced.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+            {upcomingEvents.map(e => (
+              <div key={e.id} style={{
+                padding: '12px', borderRadius: 'var(--radius-md)',
+                background: 'var(--cream)', boxShadow: 'var(--shadow-sm)',
+              }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{e.title}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  {new Date(e.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+                  {e.start.includes('T') ? ` · ${new Date(e.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''}
+                  {e.location ? ` · ${e.location}` : ''}
+                </div>
+                {e.description && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    {e.description.slice(0, 80)}{e.description.length > 80 ? '...' : ''}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Well Notes */}
       <div className="card">
         <h3>💧 Recent Drops</h3>
@@ -168,6 +212,30 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
         <button className="btn-ghost" style={{ marginTop: 12, width: '100%' }} onClick={() => onNavigate('well')}>
           Visit the Well →
         </button>
+      </div>
+
+      {/* Quick Links */}
+      <div className="card view-full">
+        <h3>🔗 Quick Links</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10, marginTop: 10 }}>
+          {quickLinks.map(l => (
+            <a
+              key={l.url}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                background: 'var(--cream)', textDecoration: 'none', color: 'var(--text)',
+                boxShadow: 'var(--shadow-sm)', fontSize: '0.85rem', fontWeight: 500,
+              }}
+            >
+              <span>{l.emoji}</span>
+              {l.label}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Brain Dumps */}

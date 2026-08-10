@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as api from './api';
-import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote } from './api';
+import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote, CalendarEventKV } from './api';
 
 import { supabase } from './lib/supabase';
 import { TopNav } from './components/TopNav';
@@ -17,7 +17,6 @@ import { usePodcastRealtime } from './hooks/usePodcastRealtime';
 import { useCoFlowRealtime } from './hooks/useCoFlowRealtime';
 import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
 import { useWorkshopFeedbackRealtime } from './hooks/useWorkshopFeedbackRealtime';
-import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
@@ -73,6 +72,7 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [coFlowDates, setCoFlowDates] = useState<CoFlowDate[]>([]);
   const [wellNotes, setWellNotes] = useState<WellNote[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventKV[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
 
   // Revenue ops — live-synced via Supabase real-time
@@ -185,6 +185,7 @@ export default function App() {
         setAnnouncements(data.announcements || []);
         setCoFlowDates(data.coflowDates || []);
         setWellNotes(data.wellNotes || []);
+        setCalendarEvents(data.calendarEvents || []);
         setCollaborators(data.collaborators || []);
         setSyncStatus('ok');
         silentFailCount.current = 0;
@@ -306,6 +307,7 @@ export default function App() {
           wellNotes={wellNotes}
           announcements={announcements}
           brainDumps={brainDumps}
+          calendarEvents={calendarEvents}
           onNavigate={(v: string) => setCurrentView(v as View)}
         />
       )}
