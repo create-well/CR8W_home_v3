@@ -11,10 +11,10 @@
 | Resource | URL | Notes |
 |----------|-----|-------|
 | **Live Dashboard** | https://cr8w.com | Password: `monnytinks` |
-| **GitHub Repo** | https://github.com/create-well/CR8W_home_v2 | Main branch auto-deploys |
+| **GitHub Repo** | https://github.com/create-well/CR8W_home_v3 | Main branch auto-deploys |
 | **Vercel Project** | https://vercel.com/create-well/cr8whomev2 | Deploy logs + env vars |
 | **Supabase Project** | https://supabase.com/dashboard/project/axntibrdivccycxdwlzk | DB, Auth, Realtime |
-| **Workspace** | `~/Desktop/createwell/CR8W_home_v2` | Local dev folder |
+| **Workspace** | `~/Desktop/createwell/CR8W_home_v3` | Local dev folder |
 
 ---
 
@@ -24,8 +24,8 @@
 
 ```bash
 cd ~/Desktop/createwell
-git clone https://github.com/create-well/CR8W_home_v2.git
-cd CR8W_home_v2
+git clone https://github.com/create-well/CR8W_home_v3.git
+cd CR8W_home_v3
 npm install
 ```
 
@@ -59,7 +59,7 @@ npm run preview
 ## 2. Deploy to Production
 
 ```bash
-cd ~/Desktop/createwell/CR8W_home_v2
+cd ~/Desktop/createwell/CR8W_home_v3
 
 # 1. Check what changed
 git status
@@ -288,4 +288,4 @@ npx vercel --prod
 
 ---
 
-*This doc lives in `~/Desktop/createwell/CR8W_home_v2/SOP.md` and should be updated as the system evolves.*
+*This doc lives in `~/Desktop/createwell/CR8W_home_v3/SOP.md` and should be updated as the system evolves.*

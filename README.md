@@ -1,49 +1,81 @@
-# CR8W Home v2 (Create Well Dashboard)
+# CR8W Home v3 (Create Well Dashboard)
 
-Team dashboard for the Create Well Collective. Figma Make code bundle, deployed to Vercel.
+Team dashboard for the Create Well Collective. React/Vite/Supabase, deployed to Vercel.
 
-> Design source: https://www.figma.com/design/GlYHRxPiD8TIw5lFSu4ALe/CR8W-Dash-v2
-> Live: https://cr8w.com
+> Live: https://cr8w.com  
+> Repo: https://github.com/create-well/CR8W_home_v3
 
-## Stack (source of truth)
+## Stack
 
-- **Frontend:** React + Vite + TypeScript + Tailwind
-- **Auth:** Supabase email/password
-- **Backend:** Supabase Edge Function `server` + **KV store** (see below)
-- **Host:** Vercel (serverless `/api/server`). NOT Netlify.
-- **Repo:** `monnylog/CR8W_home_v2`
+- **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS
+- **Backend:** Supabase (Postgres + Realtime + Edge Functions)
+- **Auth:** Profile-based (localStorage) + Supabase profiles table for roles
+- **Host:** Vercel (static build)
+- **Notion Sync:** Bidirectional via Edge Functions (`sync-to-notion`, `sync-from-notion`)
 
-## Backend architecture: KV store, not relational
+## Architecture: Hybrid (Realtime + Legacy)
 
-All app data (tasks, forum, messages, workshops, coflow, well-notes, calendar) is stored as
-JSON blobs in a **single table** `kv_store_8dcd9693`, accessed through the Edge Function
-`server` at routes `/make-server-8dcd9693/...`.
+v3 introduced Supabase real-time tables for core production data. Legacy KV store still handles some features.
 
-There are **no** per-feature Postgres tables (no `events`, `workshops`, `ideas`,
-`presence`, `read_receipts`, etc.). Any spec that assumes relational tables is stale.
-Add features by adding KV keys + server routes, not new tables.
+### ✅ Realtime (Supabase tables + hooks)
+| Feature | Table(s) | Hook |
+|---------|----------|------|
+| Calendar Events | `calendar_events` | `useCalendarRealtime` |
+| Podcast | `episodes`, `guests`, `topic_drops` | `usePodcastRealtime` |
+| CoFlow | `coflow_checkins` | `useCoFlowRealtime` |
+| Workshops | `workshops`, `applicants` | `useWorkshopRealtime` |
+| Revenue | `revenue_ops` | `useRevenueRealtime` |
 
-## Supabase project (current)
+### ⚠️ Legacy (KV store via API polling)
+| Feature | Notes |
+|---------|-------|
+| Tasks | Planned for v3.1 migration |
+| Forum | Planned for v3.x migration |
+| Messages | Planned for v3.x migration |
+| Brain Dumps | Planned for v3.x migration |
+| Well Notes | Planned for v3.x migration |
+| Announcements | Planned for v3.x migration |
 
-- **Project:** CR8W Dashboard v2
+## Supabase Project
+
+- **Project:** CR8W Dashboard v3
 - **Ref:** `axntibrdivccycxdwlzk`
 - **URL:** `https://axntibrdivccycxdwlzk.supabase.co`
-- Publishable key lives in `utils/supabase/info.tsx` and `src/app/components/AuthGate.tsx`.
-- Old ref `qwckjmktcnlwxqgnbtet` ("Create Well Dashboard") is ABANDONED. Do not use.
+- Safe config: `src/utils/supabase/config.ts`
+- **NEVER edit** `src/utils/supabase/info.tsx` — Figma Make autogenerates it
 
-## Team access
+## Notion Integration
 
-Login email maps to a profile in `src/app/components/AuthGate.tsx` (`EMAIL_PROFILE_MAP`).
-Current members: monny, sunshine, bingle, omar. Add new members there.
+- **Workspace:** hello@takehome.studio
+- Token + DB IDs stored in Supabase secrets (via `get_notion_secrets()` RPC)
+- Databases: Episodes, Guests, Topic Drops, Workshops, Applicants, Revenue, CoFlow Check-ins
+
+## Team Access
+
+Profiles: monny, sunshine, bingle, omar (core), pia (co-creator)
+
+Role-based views filter what each person sees.
 
 ## Running locally
 
 ```bash
+cd /Users/monicablanco/Desktop/createwell/CR8W_home_v3
 npm i
 npm run dev
 ```
 
 ## Deploy
 
-Push to `main`; Vercel auto-deploys to cr8w.com.
-# CR8W Dashboard v3 - Podcast First
+```bash
+npm run build
+npx vercel --prod --yes
+```
+
+Or push to `main` — Vercel auto-deploys to cr8w.com.
+
+## v3 Changelog
+
+- Added `public.calendar_events` table with RLS + realtime
+- Added `useCalendarRealtime.ts` hook
+- Edge Functions versioned in `supabase/functions/`
+- Calendar events removed from legacy sync polling

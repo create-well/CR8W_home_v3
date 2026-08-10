@@ -14,7 +14,7 @@
 | **Vercel Dashboard** | https://vercel.com/monnylog/cr8w_home_v2 | Google login (monica.istorya@gmail.com) |
 | **Supabase Dashboard** | https://supabase.com/dashboard/project/axntibrdivccycxdwlzk | Google login |
 | **Notion Workspace** | https://www.notion.so/hello-takehome-studio | hello@takehome.studio |
-| **GitHub Repo** | https://github.com/create-well/CR8W_home_v2 | — |
+| **GitHub Repo** | https://github.com/create-well/CR8W_home_v3 | — |
 | **Google Drive** | https://drive.google.com/drive/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a | monica.istorya@gmail.com |
 
 **Important tokens (DO NOT share outside core team):**
@@ -67,7 +67,7 @@ curl -X POST 'https://axntibrdivccycxdwlzk.supabase.co/functions/v1/sync-from-no
 **Step 1 — Open the code**
 ```bash
 # On Monica's Mac, the project lives here:
-cd /Users/monicablanco/Desktop/createwell/CR8W_home_v2
+cd /Users/monicablanco/Desktop/createwell/CR8W_home_v3
 ```
 
 **Step 2 — Edit the file you need**
@@ -87,7 +87,7 @@ cd /Users/monicablanco/Desktop/createwell/CR8W_home_v2
 
 **Step 3 — Build to check for errors**
 ```bash
-cd /Users/monicablanco/Desktop/createwell/CR8W_home_v2
+cd /Users/monicablanco/Desktop/createwell/CR8W_home_v3
 npm run build
 ```
 If it says "✓ built in Xms" — you're good.
@@ -170,7 +170,7 @@ Edge Functions are the serverless code that runs on Supabase (like the Notion sy
 **Step 1 — Edit the function**
 ```bash
 # Function files live here:
-cd /Users/monicablanco/Desktop/createwell/CR8W_home_v2/supabase/functions/sync-to-notion
+cd /Users/monicablanco/Desktop/createwell/CR8W_home_v3/supabase/functions/sync-to-notion
 # or
 supabase/functions/sync-from-notion
 ```
@@ -204,8 +204,8 @@ Should return `{ok: true, results: [...]}`
 **Setup:**
 ```bash
 # 1. Clone the repo
-git clone https://github.com/create-well/CR8W_home_v2.git
-cd CR8W_home_v2
+git clone https://github.com/create-well/CR8W_home_v3.git
+cd CR8W_home_v3
 
 # 2. Install dependencies
 npm install
@@ -296,7 +296,7 @@ The dashboard is a **flow tool**, not a surveillance tool. Build banks for the r
 ---
 
 *This document lives in the workspace at:*
-`/Users/monicablanco/Desktop/createwell/CR8W_home_v2/CR8W_Developer_SOP.md`
+`/Users/monicablanco/Desktop/createwell/CR8W_home_v3/CR8W_Developer_SOP.md`
 
 *And in the repo at:*
-https://github.com/create-well/CR8W_home_v2/blob/main/CR8W_Developer_SOP.md
+https://github.com/create-well/CR8W_home_v3/blob/main/CR8W_Developer_SOP.md
