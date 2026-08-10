@@ -18,9 +18,12 @@ export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, p
   return (
     <nav className="topnav">
       <div className="topnav-inner">
-        <div className="topnav-logo" onClick={() => onNavigate('hub')}>
-          <span style={{ fontSize: '1.3rem' }}>◎</span>
-          <span>create well</span>
+        <div className="topnav-logo" onClick={() => onNavigate('hub')} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img
+            src="/create-well-wordmark.png"
+            alt="Create Well"
+            style={{ height: 28, width: 'auto', display: 'block' }}
+          />
         </div>
 
         <div className="topnav-links">
