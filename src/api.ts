@@ -1,6 +1,7 @@
-import { publicAnonKey } from './utils/supabase/config';
+import { publicAnonKey, supabaseUrl } from './utils/supabase/config';
 
 const API_KEY = publicAnonKey;
+const SUPABASE_URL = supabaseUrl;
 
 function resolveApiBase(): string {
   if (import.meta.env.VITE_API_BASE) return import.meta.env.VITE_API_BASE as string;
@@ -407,4 +408,40 @@ export interface SyncData {
   episodes?: Episode[];
   guests?: Guest[];
   topicDrops?: TopicDrop[];
+}
+
+// ── Notion bidirectional sync (Edge Functions) ────────────────────────────────
+export async function triggerNotionSync(): Promise<{ ok: boolean; toNotion: any; fromNotion: any; error?: string }> {
+  const efHeaders = { 'Content-Type': 'application/json' };
+  const TIMEOUT = 30_000;
+
+  async function callEF(path: string) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+        method: 'POST',
+        headers: efHeaders,
+        body: '{}',
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${path} → ${res.status}: ${text.slice(0, 200)}`);
+      }
+      return await res.json();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  try {
+    const [toNotion, fromNotion] = await Promise.all([
+      callEF('sync-to-notion'),
+      callEF('sync-from-notion'),
+    ]);
+    return { ok: true, toNotion, fromNotion };
+  } catch (e: any) {
+    return { ok: false, toNotion: null, fromNotion: null, error: e.message };
+  }
 }

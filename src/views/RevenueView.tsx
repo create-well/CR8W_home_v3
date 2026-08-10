@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import type { RevenueOp } from '../api';
+import type { SbRevenueOp } from '../hooks/useRevenueRealtime';
 import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
 
 interface Props {
-  opportunities: RevenueOp[];
+  opportunities: SbRevenueOp[];
   workshops: SbWorkshop[];
-  onAddOp: (r: Omit<RevenueOp, 'id' | 'created_at'>) => void;
-  onUpdateOp: (id: number, updates: Partial<RevenueOp>) => void;
+  onAddOp: (r: Omit<SbRevenueOp, 'id' | 'created_at'>) => void;
+  onUpdateOp: (id: string, updates: Partial<SbRevenueOp>) => void;
+  onDeleteOp: (id: string) => void;
 }
 
 const STAGE_COLORS: Record<string, string> = {
@@ -27,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   other: '🔹 Other',
 };
 
-export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp }: Props) {
+export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onDeleteOp }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStage, setFilterStage] = useState<string>('all');
@@ -36,7 +37,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp }: P
   const [rOrg, setROrg] = useState('');
   const [rContact, setRContact] = useState('');
   const [rEmail, setREmail] = useState('');
-  const [rType, setRType] = useState<RevenueOp['type']>('sponsor');
+  const [rType, setRType] = useState<SbRevenueOp['type']>('sponsor');
   const [rAmount, setRAmount] = useState('');
   const [rCurrency, setRCurrency] = useState('USD');
   const [rExpected, setRExpected] = useState('');
@@ -164,7 +165,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp }: P
                 <td>
                   <select
                     value={o.stage}
-                    onChange={e => onUpdateOp(o.id, { stage: e.target.value as RevenueOp['stage'] })}
+                    onChange={e => onUpdateOp(o.id, { stage: e.target.value as SbRevenueOp['stage'] })}
                     style={{ padding: '4px 8px', fontSize: '0.8rem' }}
                   >
                     <option value="prospect">Prospect</option>
@@ -182,6 +183,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp }: P
                 <td>{o.owner}</td>
                 <td>
                   <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Edit</button>
+                  <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: '0.75rem', marginLeft: 6, color: 'var(--danger)' }} onClick={() => onDeleteOp(o.id)}>×</button>
                 </td>
               </tr>
             ))}
@@ -219,7 +221,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp }: P
             <div className="form-row">
               <div className="form-group">
                 <label>Type</label>
-                <select value={rType} onChange={e => setRType(e.target.value as RevenueOp['type'])}>
+                <select value={rType} onChange={e => setRType(e.target.value as SbRevenueOp['type'])}>
                   <option value="sponsor">Sponsor</option>
                   <option value="grant">Grant</option>
                   <option value="donation">Donation</option>

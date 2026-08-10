@@ -16,6 +16,7 @@ import { ImessageTerminal } from './components/iMessageTerminal';
 import { usePodcastRealtime } from './hooks/usePodcastRealtime';
 import { useCoFlowRealtime } from './hooks/useCoFlowRealtime';
 import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
+import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
@@ -71,7 +72,9 @@ export default function App() {
   const [coFlowDates, setCoFlowDates] = useState<CoFlowDate[]>([]);
   const [wellNotes, setWellNotes] = useState<WellNote[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
-  const [revenueOps, setRevenueOps] = useState<any[]>([]);
+
+  // Revenue ops — live-synced via Supabase real-time
+  const { ops: revenueOps, addOp: addRevenueOp, updateOp: updateRevenueOp, deleteOp: deleteRevenueOp } = useRevenueRealtime();
 
   // Podcast data — live-synced via Supabase real-time
   const {
@@ -108,6 +111,24 @@ export default function App() {
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const handleNotionSync = async () => {
+    setSyncStatus('syncing');
+    setSyncTime('Syncing with Notion…');
+    try {
+      const result = await api.triggerNotionSync();
+      if (result.ok) {
+        setSyncStatus('ok');
+        setSyncTime('Synced with Notion ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+      } else {
+        setSyncStatus('error');
+        setSyncTime('Notion sync failed: ' + (result.error || 'Unknown error'));
+      }
+    } catch (e: any) {
+      setSyncStatus('error');
+      setSyncTime('Notion sync error: ' + e.message);
+    }
+  };
 
   const fetchSyncRef = useRef<((silent?: boolean) => Promise<void>) | undefined>(undefined);
   const silentFailCount = useRef(0);
@@ -156,7 +177,6 @@ export default function App() {
         setCoFlowDates(data.coflowDates || []);
         setWellNotes(data.wellNotes || []);
         setCollaborators(data.collaborators || []);
-        setRevenueOps(data.revenueOps || []);
         setSyncStatus('ok');
         silentFailCount.current = 0;
         const now = new Date();
@@ -240,13 +260,6 @@ export default function App() {
     try { setCollaborators(p => p.map(c => c.id === id ? { ...c, ...updates } : c)); await api.updateCollaborator(id, updates); } catch (e) { console.error(e); }
   };
 
-  const addRevenueOp = async (r: Omit<any, 'id' | 'created_at'>) => {
-    try { const created = await api.createRevenueOp(r); setRevenueOps(p => [...p, created]); } catch (e) { console.error(e); }
-  };
-  const updateRevenueOp = async (id: number, updates: Partial<any>) => {
-    try { setRevenueOps(p => p.map(r => r.id === id ? { ...r, ...updates } : r)); await api.updateRevenueOp(id, updates); } catch (e) { console.error(e); }
-  };
-
   // ── Filter views by role ─────────────────────────────────────────────────────
   const allowedViews = viewsForRole(role);
   const visibleViews = ALL_VIEWS.filter(v => allowedViews.includes(v.key));
@@ -266,6 +279,7 @@ export default function App() {
         profile={profile}
         onSignOut={() => { localStorage.clear(); setAuthed(false); window.location.reload(); }}
         onOpenTerminal={() => setShowTerminal(true)}
+        onTriggerSync={handleNotionSync}
       />
 
       {!dataLoaded && (
@@ -355,6 +369,7 @@ export default function App() {
           workshops={sbWorkshops}
           onAddOp={addRevenueOp}
           onUpdateOp={updateRevenueOp}
+          onDeleteOp={deleteRevenueOp}
         />
       )}
 

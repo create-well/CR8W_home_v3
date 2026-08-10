@@ -9,9 +9,10 @@ interface Props {
   profile: string;
   onSignOut: () => void;
   onOpenTerminal: () => void;
+  onTriggerSync?: () => void;
 }
 
-export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, profile, onSignOut, onOpenTerminal }: Props) {
+export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, profile, onSignOut, onOpenTerminal, onTriggerSync }: Props) {
   const [showProfile, setShowProfile] = useState(false);
 
   return (
@@ -42,6 +43,18 @@ export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, p
             onClick={onOpenTerminal}
             title="iMessage Terminal"
           >💬</button>
+
+          {onTriggerSync && (
+            <button
+              className="btn-ghost"
+              style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+              onClick={onTriggerSync}
+              disabled={syncStatus === 'syncing'}
+              title="Sync with Notion"
+            >
+              {syncStatus === 'syncing' ? '⏳' : '🔄'}
+            </button>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div className={`sync-dot ${syncStatus}`} title={syncTime || 'Sync status'} />
