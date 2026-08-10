@@ -52,8 +52,8 @@ function viewsForRole(role: Role): View[] {
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState(false);
-  const [profile, setProfile] = useState<string>('');
+  const [authed, setAuthed] = useState(() => !!localStorage.getItem('cr8w_profile'));
+  const [profile, setProfile] = useState<string>(() => localStorage.getItem('cr8w_profile') || '');
   const [role, setRole] = useState<Role>('public');
   const [currentView, setCurrentView] = useState<View>('hub');
   const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('ok');
