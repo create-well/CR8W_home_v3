@@ -16,6 +16,8 @@ import { ImessageTerminal } from './components/iMessageTerminal';
 import { usePodcastRealtime } from './hooks/usePodcastRealtime';
 import { useCoFlowRealtime } from './hooks/useCoFlowRealtime';
 import { useWorkshopRealtime } from './hooks/useWorkshopRealtime';
+import { useWorkshopFeedbackRealtime } from './hooks/useWorkshopFeedbackRealtime';
+import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
@@ -108,6 +110,13 @@ export default function App() {
     addApplicant: addSbApplicant,
     updateApplicant: updateSbApplicant,
   } = useWorkshopRealtime();
+
+  // Workshop feedback — post-event data collection
+  const {
+    feedback: workshopFeedback,
+    addFeedback: addWorkshopFeedback,
+    deleteFeedback: deleteWorkshopFeedback,
+  } = useWorkshopFeedbackRealtime();
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -320,11 +329,14 @@ export default function App() {
         <WorkshopsView
           workshops={sbWorkshops}
           applicants={sbApplicants}
+          feedback={workshopFeedback}
           onAddWorkshop={addSbWorkshop}
           onUpdateWorkshop={updateSbWorkshop}
           onDeleteWorkshop={deleteSbWorkshop}
           onAddApplicant={addSbApplicant}
           onUpdateApplicant={updateSbApplicant}
+          onAddFeedback={addWorkshopFeedback}
+          onDeleteFeedback={deleteWorkshopFeedback}
         />
       )}
 
