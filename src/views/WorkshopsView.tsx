@@ -34,9 +34,11 @@ const WORKSHOP_STATUSES = ['ideation', 'planning', 'scheduled', 'active', 'compl
 
 const RSVP_STATUSES = [
   { key: 'invited', label: 'Invited' },
-  { key: 'going', label: 'Going' },
-  { key: 'maybe', label: 'Maybe' },
+  { key: 'interested', label: 'Interested' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'attended', label: 'Attended' },
   { key: 'declined', label: 'Declined' },
+  { key: 'no_response', label: 'No response' },
 ] as const;
 
 const LEAD_SOURCES = ['hard-launch', 'podcast-launch', 'referral', 'instagram', 'podcast', 'other'];
@@ -172,7 +174,7 @@ export function WorkshopsView({
   };
 
   const filteredLeads = leads.filter(l => {
-    if (leadFilter === 'follow-up' && !(l.rsvpStatus === 'invited' || l.rsvpStatus === 'maybe')) return false;
+    if (leadFilter === 'follow-up' && !(l.rsvpStatus === 'invited' || l.rsvpStatus === 'interested' || l.rsvpStatus === 'no_response')) return false;
     if (leadFilter !== 'all' && leadFilter !== 'follow-up' && l.rsvpStatus !== leadFilter) return false;
     if (leadSearch) {
       const q = leadSearch.toLowerCase();
@@ -181,6 +183,10 @@ export function WorkshopsView({
     }
     return true;
   });
+
+  const confirmedCount = leads.filter(l => l.rsvpStatus === 'confirmed').length;
+  const attendedCount = leads.filter(l => l.rsvpStatus === 'attended').length;
+  const followUpCount = leads.filter(l => l.rsvpStatus === 'invited' || l.rsvpStatus === 'interested' || l.rsvpStatus === 'no_response').length;
 
   const applicantsByStage = (stage: string) => applicants.filter(a => a.status === stage);
   const feedbackForWorkshop = (id: string) => feedback.filter(f => f.workshopId === id);
@@ -393,6 +399,10 @@ export function WorkshopsView({
               {RSVP_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
+
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+            {confirmedCount} confirmed · {attendedCount} attended · {followUpCount} need follow-up
+          </p>
 
           {filteredLeads.length === 0 && (
             <div className="card" style={{ textAlign: 'center', padding: '30px' }}>

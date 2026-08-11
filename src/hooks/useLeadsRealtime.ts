@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export type RsvpStatus = 'invited' | 'going' | 'maybe' | 'declined';
+export type RsvpStatus = 'invited' | 'interested' | 'confirmed' | 'attended' | 'declined' | 'no_response';
 
 export interface SbLead {
   id: string;
@@ -46,7 +46,7 @@ export function useLeadsRealtime() {
     try {
       setLoading(true);
       const { data, error: err } = await supabase
-        .from('leads')
+        .from('event_leads')
         .select('*')
         .order('created_at', { ascending: false });
       if (err) throw err;
@@ -63,8 +63,8 @@ export function useLeadsRealtime() {
 
   useEffect(() => {
     const channel = supabase
-      .channel('leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+      .channel('event-leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_leads' }, () => {
         fetchAll();
       })
       .subscribe();
@@ -72,7 +72,7 @@ export function useLeadsRealtime() {
   }, [fetchAll]);
 
   const addLead = useCallback(async (l: Omit<SbLead, 'id' | 'created_at' | 'updated_at' | 'rsvpAt' | 'surveyData'> & { rsvpAt?: string | null; surveyData?: Record<string, any> }) => {
-    const { data, error } = await supabase.from('leads').insert({
+    const { data, error } = await supabase.from('event_leads').insert({
       full_name: l.fullName,
       email: l.email || null,
       phone: l.phone || null,
@@ -104,8 +104,9 @@ export function useLeadsRealtime() {
     if (updates.source !== undefined) payload.source = updates.source;
     if (updates.surveyData !== undefined) payload.survey_data = updates.surveyData;
     if (updates.notes !== undefined) payload.notes = updates.notes;
+    payload.updated_at = new Date().toISOString();
 
-    const { error } = await supabase.from('leads').update(payload).eq('id', id);
+    const { error } = await supabase.from('event_leads').update(payload).eq('id', id);
     if (error) throw error;
     setLeads(prev => prev.map(l => l.id === id
       ? { ...l, ...updates, rsvpAt: payload.rsvp_at !== undefined ? payload.rsvp_at : l.rsvpAt }
@@ -113,7 +114,7 @@ export function useLeadsRealtime() {
   }, []);
 
   const deleteLead = useCallback(async (id: string) => {
-    const { error } = await supabase.from('leads').delete().eq('id', id);
+    const { error } = await supabase.from('event_leads').delete().eq('id', id);
     if (error) throw error;
     setLeads(prev => prev.filter(l => l.id !== id));
   }, []);
