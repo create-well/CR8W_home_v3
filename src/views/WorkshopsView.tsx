@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { SbWorkshop, SbApplicant } from '../hooks/useWorkshopRealtime';
 import type { SbWorkshopFeedback } from '../hooks/useWorkshopFeedbackRealtime';
+import type { SbLead } from '../hooks/useLeadsRealtime';
 
 interface Props {
   workshops: SbWorkshop[];
@@ -13,6 +14,11 @@ interface Props {
   onUpdateApplicant: (id: string, updates: Partial<SbApplicant>) => void;
   onAddFeedback: (f: Omit<SbWorkshopFeedback, 'id' | 'created_at'>) => void;
   onDeleteFeedback: (id: string) => void;
+  leads: SbLead[];
+  canManageLeads?: boolean;
+  onAddLead: (l: Omit<SbLead, 'id' | 'created_at' | 'updated_at' | 'rsvpAt' | 'surveyData'>) => void;
+  onUpdateLead: (id: string, updates: Partial<SbLead>) => void;
+  onDeleteLead: (id: string) => void;
 }
 
 const APPLICANT_STAGES = [
@@ -26,13 +32,25 @@ const APPLICANT_STAGES = [
 
 const WORKSHOP_STATUSES = ['ideation', 'planning', 'scheduled', 'active', 'completed', 'cancelled'];
 
+const RSVP_STATUSES = [
+  { key: 'invited', label: 'Invited' },
+  { key: 'going', label: 'Going' },
+  { key: 'maybe', label: 'Maybe' },
+  { key: 'declined', label: 'Declined' },
+] as const;
+
+const LEAD_SOURCES = ['hard-launch', 'podcast-launch', 'referral', 'instagram', 'podcast', 'other'];
+const TEAM_HANDLES = ['monny', 'sunshine', 'bingle', 'omar', 'pia'];
+
 export function WorkshopsView({
   workshops, applicants, feedback,
   onAddWorkshop, onUpdateWorkshop, onDeleteWorkshop,
   onAddApplicant, onUpdateApplicant,
   onAddFeedback, onDeleteFeedback,
+  leads, canManageLeads,
+  onAddLead, onUpdateLead, onDeleteLead,
 }: Props) {
-  const [tab, setTab] = useState<'pipeline' | 'workshops' | 'feedback'>('pipeline');
+  const [tab, setTab] = useState<'pipeline' | 'workshops' | 'feedback' | 'leads'>('pipeline');
   const [showAddWorkshop, setShowAddWorkshop] = useState(false);
   const [showAddApplicant, setShowAddApplicant] = useState(false);
   const [showAddFeedback, setShowAddFeedback] = useState(false);
@@ -69,6 +87,18 @@ export function WorkshopsView({
   const [fWouldReturn, setFWouldReturn] = useState(true);
   const [fWouldRecommend, setFWouldRecommend] = useState(true);
   const [fNotes, setFNotes] = useState('');
+
+  // Lead form state
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [leadSearch, setLeadSearch] = useState('');
+  const [leadFilter, setLeadFilter] = useState('all');
+  const [lName, setLName] = useState('');
+  const [lEmail, setLEmail] = useState('');
+  const [lPhone, setLPhone] = useState('');
+  const [lInvitedBy, setLInvitedBy] = useState('');
+  const [lSource, setLSource] = useState('');
+  const [lRsvp, setLRsvp] = useState<SbLead['rsvpStatus']>('invited');
+  const [lNotes, setLNotes] = useState('');
 
   const filteredWorkshops = filterStatus === 'all'
     ? workshops
@@ -125,6 +155,33 @@ export function WorkshopsView({
     setShowAddFeedback(false);
   };
 
+  const handleAddLead = () => {
+    if (!lName) return;
+    onAddLead({
+      fullName: lName,
+      email: lEmail || null,
+      phone: lPhone || null,
+      eventId: null,
+      invitedBy: lInvitedBy || null,
+      rsvpStatus: lRsvp,
+      source: lSource || null,
+      notes: lNotes || null,
+    });
+    setLName(''); setLEmail(''); setLPhone(''); setLInvitedBy(''); setLSource(''); setLRsvp('invited'); setLNotes('');
+    setShowAddLead(false);
+  };
+
+  const filteredLeads = leads.filter(l => {
+    if (leadFilter === 'follow-up' && !(l.rsvpStatus === 'invited' || l.rsvpStatus === 'maybe')) return false;
+    if (leadFilter !== 'all' && leadFilter !== 'follow-up' && l.rsvpStatus !== leadFilter) return false;
+    if (leadSearch) {
+      const q = leadSearch.toLowerCase();
+      const hay = [l.fullName, l.email, l.phone, l.invitedBy, l.source, l.notes].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
   const applicantsByStage = (stage: string) => applicants.filter(a => a.status === stage);
   const feedbackForWorkshop = (id: string) => feedback.filter(f => f.workshopId === id);
   const avgRating = (ratings: (number | null)[]) => {
@@ -144,7 +201,7 @@ export function WorkshopsView({
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
-        {(['pipeline', 'workshops', 'feedback'] as const).map(t => (
+        {(['pipeline', 'workshops', 'feedback', ...(canManageLeads ? ['leads' as const] : [])]).map(t => (
           <button
             key={t}
             className={tab === t ? 'btn-primary' : 'btn-ghost'}
@@ -314,6 +371,78 @@ export function WorkshopsView({
         </div>
       )}
 
+      {tab === 'leads' && canManageLeads && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Launch leads & RSVPs — one list instead of scattered sheets.
+            </p>
+            <button className="btn-primary" onClick={() => setShowAddLead(true)}>+ Lead</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <input
+              value={leadSearch}
+              onChange={e => setLeadSearch(e.target.value)}
+              placeholder="Search name, email, notes…"
+              style={{ flex: 1, minWidth: 200, padding: '8px 12px' }}
+            />
+            <select value={leadFilter} onChange={e => setLeadFilter(e.target.value)} style={{ padding: '8px 12px' }}>
+              <option value="all">All</option>
+              <option value="follow-up">Needs follow-up</option>
+              {RSVP_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </div>
+
+          {filteredLeads.length === 0 && (
+            <div className="card" style={{ textAlign: 'center', padding: '30px' }}>
+              <p style={{ color: 'var(--text-muted)' }}>No leads match. Add your first lead to start the list.</p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {filteredLeads.map(l => (
+              <div key={l.id} className="card" style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{l.fullName}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {[l.email, l.phone].filter(Boolean).join(' · ') || 'No contact info'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6, alignItems: 'center' }}>
+                      {l.invitedBy && <span className="badge badge-camel">via {l.invitedBy}</span>}
+                      {l.source && <span className="badge badge-clay">{l.source}</span>}
+                      {l.rsvpAt && (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          RSVP {new Date(l.rsvpAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                    {l.notes && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                        {l.notes}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <select
+                      value={l.rsvpStatus}
+                      onChange={e => onUpdateLead(l.id, { rsvpStatus: e.target.value as SbLead['rsvpStatus'] })}
+                      style={{ padding: '6px 8px', fontSize: '0.8rem' }}
+                    >
+                      {RSVP_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                    <button className="btn-danger" style={{ padding: '4px 8px', fontSize: '0.7rem' }} onClick={() => onDeleteLead(l.id)}>
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add Workshop Modal */}
       {showAddWorkshop && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddWorkshop(false); }}>
@@ -394,6 +523,61 @@ export function WorkshopsView({
             </div>
             <button className="btn-primary" style={{ width: '100%', marginTop: 8 }} onClick={handleAddApplicant}>
               Add Applicant
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lead Modal */}
+      {showAddLead && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddLead(false); }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <span className="modal-title">⛲ New Lead</span>
+              <button className="modal-close" onClick={() => setShowAddLead(false)}>×</button>
+            </div>
+            <div className="form-group">
+              <label>Name</label>
+              <input value={lName} onChange={e => setLName(e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Email</label>
+                <input type="email" value={lEmail} onChange={e => setLEmail(e.target.value)} placeholder="email@example.com" />
+              </div>
+              <div className="form-group">
+                <label>Phone (optional)</label>
+                <input value={lPhone} onChange={e => setLPhone(e.target.value)} placeholder="Phone" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Invited by</label>
+                <select value={lInvitedBy} onChange={e => setLInvitedBy(e.target.value)}>
+                  <option value="">—</option>
+                  {TEAM_HANDLES.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Source</label>
+                <select value={lSource} onChange={e => setLSource(e.target.value)}>
+                  <option value="">—</option>
+                  {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>RSVP status</label>
+              <select value={lRsvp} onChange={e => setLRsvp(e.target.value as SbLead['rsvpStatus'])}>
+                {RSVP_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Notes</label>
+              <textarea value={lNotes} onChange={e => setLNotes(e.target.value)} placeholder="Any initial notes..." />
+            </div>
+            <button className="btn-primary" style={{ width: '100%', marginTop: 8 }} onClick={handleAddLead}>
+              Add Lead
             </button>
           </div>
         </div>

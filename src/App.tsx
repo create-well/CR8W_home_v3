@@ -20,6 +20,7 @@ import { useWorkshopFeedbackRealtime } from './hooks/useWorkshopFeedbackRealtime
 import { useCalendarRealtime } from './hooks/useCalendarRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 import { useTasksRealtime } from './hooks/useTasksRealtime';
+import { useLeadsRealtime } from './hooks/useLeadsRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
@@ -123,6 +124,14 @@ export default function App() {
     addFeedback: addWorkshopFeedback,
     deleteFeedback: deleteWorkshopFeedback,
   } = useWorkshopFeedbackRealtime();
+
+  // Launch leads + RSVPs — live-synced via Supabase real-time
+  const {
+    leads,
+    addLead,
+    updateLead,
+    deleteLead,
+  } = useLeadsRealtime();
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -358,6 +367,11 @@ export default function App() {
           onUpdateApplicant={updateSbApplicant}
           onAddFeedback={addWorkshopFeedback}
           onDeleteFeedback={deleteWorkshopFeedback}
+          leads={leads}
+          canManageLeads={role === 'core'}
+          onAddLead={addLead}
+          onUpdateLead={updateLead}
+          onDeleteLead={deleteLead}
         />
       )}
 
