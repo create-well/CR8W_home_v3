@@ -39,3 +39,4 @@ pnpm-debug.log*
 # Finder metadata
 Icon?
 .DS_Store
+supabase/.env.local
