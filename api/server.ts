@@ -175,6 +175,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    // ── Notion sync run history (read-only) ───────────────────────────────────
+    if (resource === 'notion-sync-runs' && method === 'GET') {
+      res.json({
+        to: await getList('notion_sync_runs_to'),
+        from: await getList('notion_sync_runs_from'),
+      });
+      return;
+    }
+
     // ── Forum replies (nested routes) ─────────────────────────────────────────
     // GET/POST  /forum/:postId/replies
     if (resource === 'forum' && sub === 'replies') {
