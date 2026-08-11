@@ -126,6 +126,26 @@ export default function App() {
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [notionSyncNote, setNotionSyncNote] = useState('');
+
+  // ── Notion sync run history (read-only, shown as 🔄 button tooltip) ─────────
+  const refreshNotionSyncNote = async () => {
+    try {
+      const runs = await api.getNotionSyncRuns();
+      const all = [...(runs.to || []), ...(runs.from || [])]
+        .sort((a, b) => (b.ran_at || '').localeCompare(a.ran_at || ''));
+      const fmt = (iso: string) =>
+        new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const lastOk = all.find(r => r.ok);
+      const lastErr = all.find(r => !r.ok);
+      let note = '';
+      if (lastOk) note = `Last Notion sync: ${fmt(lastOk.ran_at)}`;
+      if (lastErr) note += `${note ? ' · ' : ''}Last error ${fmt(lastErr.ran_at)}: ${lastErr.error || 'unknown'}`;
+      setNotionSyncNote(note);
+    } catch { /* keep prior note */ }
+  };
+
+  useEffect(() => { refreshNotionSyncNote(); }, []);
 
   const handleNotionSync = async () => {
     setSyncStatus('syncing');
@@ -143,6 +163,7 @@ export default function App() {
       setSyncStatus('error');
       setSyncTime('Notion sync error: ' + e.message);
     }
+    refreshNotionSyncNote();
   };
 
   const fetchSyncRef = useRef<((silent?: boolean) => Promise<void>) | undefined>(undefined);
@@ -287,6 +308,7 @@ export default function App() {
         onSignOut={() => { localStorage.clear(); setAuthed(false); window.location.reload(); }}
         onOpenTerminal={() => setShowTerminal(true)}
         onTriggerSync={handleNotionSync}
+        notionSyncNote={notionSyncNote}
       />
 
       {!dataLoaded && (

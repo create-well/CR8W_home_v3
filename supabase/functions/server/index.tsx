@@ -107,6 +107,14 @@ app.get("/make-server-8dcd9693/sync", async (c) => {
   }
 });
 
+// ── Notion sync run history (read-only) ─────────────────────────────────────
+app.get("/make-server-8dcd9693/notion-sync-runs", async (c) => {
+  return c.json({
+    to: await getList("notion_sync_runs_to"),
+    from: await getList("notion_sync_runs_from"),
+  });
+});
+
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 app.get("/make-server-8dcd9693/tasks", async (c) => {
   return c.json(await getList("cr8w_tasks"));

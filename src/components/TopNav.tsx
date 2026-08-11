@@ -10,9 +10,10 @@ interface Props {
   onSignOut: () => void;
   onOpenTerminal: () => void;
   onTriggerSync?: () => void;
+  notionSyncNote?: string;
 }
 
-export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, profile, onSignOut, onOpenTerminal, onTriggerSync }: Props) {
+export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, profile, onSignOut, onOpenTerminal, onTriggerSync, notionSyncNote }: Props) {
   const [showProfile, setShowProfile] = useState(false);
 
   return (
@@ -53,7 +54,7 @@ export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, p
               style={{ padding: '6px 10px', fontSize: '0.8rem' }}
               onClick={onTriggerSync}
               disabled={syncStatus === 'syncing'}
-              title="Sync with Notion"
+              title={notionSyncNote || 'Sync with Notion'}
             >
               {syncStatus === 'syncing' ? '⏳' : '🔄'}
             </button>

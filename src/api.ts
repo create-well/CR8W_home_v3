@@ -415,6 +415,17 @@ export interface SyncData {
   topicDrops?: TopicDrop[];
 }
 
+// ── Notion sync run history (read-only) ─────────────────────────────────────
+export interface NotionSyncRun {
+  ran_at: string;
+  ok: boolean;
+  results: { table: string; created?: number; updated?: number; skipped?: number; note?: string }[];
+  error?: string;
+}
+
+export const getNotionSyncRuns = () =>
+  req<{ to: NotionSyncRun[]; from: NotionSyncRun[] }>('GET', '/notion-sync-runs');
+
 // ── Notion bidirectional sync (Edge Functions) ────────────────────────────────
 export async function triggerNotionSync(): Promise<{ ok: boolean; toNotion: any; fromNotion: any; error?: string }> {
   const efHeaders = { 'Content-Type': 'application/json' };

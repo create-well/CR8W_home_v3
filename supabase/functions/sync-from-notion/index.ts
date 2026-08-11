@@ -337,6 +337,33 @@ async function syncTopicDrops(token: string, supabase: any, dbId: string) {
   return { table: "topic_drops", created, updated, skipped };
 }
 
+// ── Sync run history (KV, capped at 25 newest-first entries) ────────────────
+const RUN_HISTORY_LIMIT = 25;
+
+async function recordSyncRun(supabase: any, key: string, entry: Record<string, unknown>) {
+  try {
+    const { data } = await supabase
+      .from("kv_store_8dcd9693")
+      .select("value")
+      .eq("key", key)
+      .maybeSingle();
+    let runs: unknown[] = [];
+    const raw = data?.value;
+    if (typeof raw === "string") {
+      try { runs = JSON.parse(raw); } catch { runs = []; }
+    } else if (Array.isArray(raw)) {
+      runs = raw;
+    }
+    runs.unshift(entry);
+    runs = runs.slice(0, RUN_HISTORY_LIMIT);
+    await supabase
+      .from("kv_store_8dcd9693")
+      .upsert({ key, value: JSON.stringify(runs) });
+  } catch (e: any) {
+    console.error(`Failed to record sync run (${key}):`, e?.message || e);
+  }
+}
+
 serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -346,6 +373,12 @@ serve(async (req) => {
   try {
     secrets = await loadSecrets(supabase);
   } catch (e: any) {
+    await recordSyncRun(supabase, "notion_sync_runs_from", {
+      ran_at: new Date().toISOString(),
+      ok: false,
+      results: [],
+      error: `Failed to load secrets: ${e.message}`,
+    });
     return new Response(
       JSON.stringify({ error: `Failed to load secrets: ${e.message}` }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -354,6 +387,12 @@ serve(async (req) => {
 
   const NOTION_TOKEN = secrets.get("NOTION_TOKEN");
   if (!NOTION_TOKEN) {
+    await recordSyncRun(supabase, "notion_sync_runs_from", {
+      ran_at: new Date().toISOString(),
+      ok: false,
+      results: [],
+      error: "NOTION_TOKEN not found in vault.secrets",
+    });
     return new Response(
       JSON.stringify({ error: "NOTION_TOKEN not found in vault.secrets" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -393,12 +432,23 @@ serve(async (req) => {
     if (dbTopicDrops) results.push(await syncTopicDrops(NOTION_TOKEN, supabase, dbTopicDrops));
     else results.push({ table: "topic_drops", note: "No NOTION_DB_TOPIC_DROPS secret" });
 
+    await recordSyncRun(supabase, "notion_sync_runs_from", {
+      ran_at: new Date().toISOString(),
+      ok: true,
+      results,
+    });
     return new Response(JSON.stringify({ ok: true, results }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (e: any) {
     console.error("Sync from Notion failed:", e);
+    await recordSyncRun(supabase, "notion_sync_runs_from", {
+      ran_at: new Date().toISOString(),
+      ok: false,
+      results: [],
+      error: e.message,
+    });
     return new Response(
       JSON.stringify({ error: e.message, stack: e.stack }),
       { status: 500, headers: { "Content-Type": "application/json" } }
