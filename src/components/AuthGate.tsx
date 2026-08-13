@@ -26,7 +26,7 @@ export function AuthGate({ onAuthenticated }: Props) {
   };
 
   return (
-    <div style={{
+    <div data-testid="auth-gate" style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--cream)', padding: 16,
     }}>
@@ -43,7 +43,7 @@ export function AuthGate({ onAuthenticated }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
           {PROFILES.map(p => (
             <button
-              key={p.key}
+              key={p.key} data-testid={`auth-profile-${p.key}`} aria-pressed={selected === p.key}
               onClick={() => { setSelected(p.key); setError(''); }}
               style={{
                 padding: '14px 10px', borderRadius: 'var(--radius-md)',
@@ -62,14 +62,14 @@ export function AuthGate({ onAuthenticated }: Props) {
 
         <form onSubmit={handleSubmit}>
           <input
-            type="password"
+            type="password" data-testid="auth-password" name="password" autoComplete="current-password"
             placeholder="Password"
             value={pass}
             onChange={e => { setPass(e.target.value); setError(''); }}
             style={{ width: '100%', marginBottom: 12 }}
           />
           {error && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}
-          <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+          <button data-testid="auth-submit" type="submit" className="btn-primary" style={{ width: '100%' }}>
             Enter the well
           </button>
         </form>

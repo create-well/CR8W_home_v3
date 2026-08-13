@@ -46,7 +46,7 @@ export function WellView({ forum, forumReplies, wellNotes, brainDumps, onAddForu
   const repliesFor = (postId: number) => forumReplies.filter(r => r.postId === postId);
 
   return (
-    <div>
+    <div data-testid="well-view">
       <h1>💧 The Well</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
         Async drops. Ideas, downloads, threads. The water holds what you release.
@@ -54,7 +54,7 @@ export function WellView({ forum, forumReplies, wellNotes, brainDumps, onAddForu
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {(['forum', 'drops', 'braindumps'] as const).map(t => (
-          <button key={t} className={tab === t ? 'btn-primary' : 'btn-ghost'} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => setTab(t)}>
+          <button key={t} data-testid={`well-tab-${t}`} className={tab === t ? 'btn-primary' : 'btn-ghost'} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => setTab(t)}>
             {t === 'forum' ? '💬 Forum' : t === 'drops' ? '💧 Drops' : '🧠 Brain Dumps'}
           </button>
         ))}
@@ -144,8 +144,8 @@ export function WellView({ forum, forumReplies, wellNotes, brainDumps, onAddForu
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 10 }}>
               Anonymous-ish. Land what you catch. Others can land it too.
             </p>
-            <textarea value={wellContent} onChange={e => setWellContent(e.target.value)} placeholder="A download, a wondering, a phrase..." style={{ minHeight: 60 }} />
-            <button className="btn-primary" style={{ marginTop: 10 }} onClick={handleWellDrop}>Drop in the well</button>
+            <textarea data-testid="well-note-input" value={wellContent} onChange={e => setWellContent(e.target.value)} placeholder="A download, a wondering, a phrase..." style={{ minHeight: 60 }} />
+            <button data-testid="well-note-submit" className="btn-primary" style={{ marginTop: 10 }} onClick={handleWellDrop}>Drop in the well</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
