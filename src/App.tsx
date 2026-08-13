@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as api from './api';
-import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate, WellNote } from './api';
+import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate } from './api';
 
 import { supabase } from './lib/supabase';
 import { TopNav } from './components/TopNav';
@@ -21,6 +21,7 @@ import { useCalendarRealtime } from './hooks/useCalendarRealtime';
 import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 import { useTasksRealtime } from './hooks/useTasksRealtime';
 import { useLeadsRealtime } from './hooks/useLeadsRealtime';
+import { useWellNotesRealtime } from './hooks/useWellNotesRealtime';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
@@ -76,7 +77,6 @@ export default function App() {
   const [brainDumps, setBrainDumps] = useState<BrainDump[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [coFlowDates, setCoFlowDates] = useState<CoFlowDate[]>([]);
-  const [wellNotes, setWellNotes] = useState<WellNote[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
 
   // Calendar events — live-synced via Supabase real-time (v3)
@@ -132,6 +132,9 @@ export default function App() {
     updateLead,
     deleteLead,
   } = useLeadsRealtime();
+
+  // Well notes — live-synced via Supabase real-time (v3.2)
+  const { notes: wellNotes, addNote, landNote } = useWellNotesRealtime();
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -219,7 +222,6 @@ export default function App() {
         setBrainDumps(data.braindumps || []);
         setAnnouncements(data.announcements || []);
         setCoFlowDates(data.coflowDates || []);
-        setWellNotes(data.wellNotes || []);
         setCollaborators(data.collaborators || []);
         setSyncStatus('ok');
         silentFailCount.current = 0;
@@ -282,11 +284,12 @@ export default function App() {
     try { setCoFlowDates(p => p.map(d => d.id === id ? { ...d, ...updates } : d)); await api.updateCoFlowDate(id, updates); } catch (e) { console.error(e); }
   };
 
+  // Well notes (realtime hook; same try/catch shape as the legacy actions)
   const addWellNote = async (content: string) => {
-    try { const created = await api.createWellNote({ content }); setWellNotes(p => [...p, created]); } catch (e) { console.error(e); }
+    try { await addNote(content); } catch (e) { console.error(e); }
   };
-  const landWellNote = async (id: number) => {
-    try { const note = wellNotes.find(n => n.id === id); if (!note) return; const updated = await api.updateWellNote(id, { landed: (note.landed || 0) + 1 }); setWellNotes(p => p.map(n => n.id === id ? updated : n)); } catch (e) { console.error(e); }
+  const landWellNote = async (id: string) => {
+    try { await landNote(id); } catch (e) { console.error(e); }
   };
 
   // v3 actions (legacy API)

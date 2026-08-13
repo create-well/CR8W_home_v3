@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import type { ForumPost, ForumReply, WellNote, BrainDump } from '../api';
+import type { ForumPost, ForumReply, BrainDump } from '../api';
+import type { SbWellNote } from '../hooks/useWellNotesRealtime';
 
 interface Props {
   forum: ForumPost[];
   forumReplies: ForumReply[];
-  wellNotes: WellNote[];
+  wellNotes: SbWellNote[];
   brainDumps: BrainDump[];
   onAddForumPost: (post: Omit<ForumPost, 'id' | 'created_at'>) => void;
   onAddForumReply: (postId: number, reply: { author: string; content: string }) => void;
   onAddWellNote: (content: string) => void;
-  onLandWellNote: (id: number) => void;
+  onLandWellNote: (id: string) => void;
   onAddBrainDump: (dump: Omit<BrainDump, 'id' | 'created_at'>) => void;
 }
 

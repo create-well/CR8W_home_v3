@@ -1,12 +1,13 @@
 import React from 'react';
-import type { Task, CoFlowDate, WellNote, Announcement, BrainDump, CalendarEventKV } from '../api';
+import type { Task, CoFlowDate, Announcement, BrainDump, CalendarEventKV } from '../api';
+import type { SbWellNote } from '../hooks/useWellNotesRealtime';
 import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
 
 interface Props {
   tasks: Task[];
   workshops: SbWorkshop[];
   coFlowDates: CoFlowDate[];
-  wellNotes: WellNote[];
+  wellNotes: SbWellNote[];
   announcements: Announcement[];
   brainDumps: BrainDump[];
   calendarEvents: CalendarEventKV[];
