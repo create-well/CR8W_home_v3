@@ -6,12 +6,12 @@ interface Props {
   guests: Guest[];
   topicDrops: TopicDrop[];
   onAddEpisode: (e: Omit<Episode, 'id' | 'created_at'>) => void;
-  onUpdateEpisode: (id: number, e: Partial<Episode>) => void;
-  onDeleteEpisode: (id: number) => void;
+  onUpdateEpisode: (id: string, e: Partial<Episode>) => void;
+  onDeleteEpisode: (id: string) => void;
   onAddGuest: (g: Omit<Guest, 'id' | 'created_at'>) => void;
-  onUpdateGuest: (id: number, g: Partial<Guest>) => void;
+  onUpdateGuest: (id: string, g: Partial<Guest>) => void;
   onAddTopicDrop: (d: Omit<TopicDrop, 'id' | 'created_at'>) => void;
-  onUpdateTopicDrop: (id: number, d: Partial<TopicDrop>) => void;
+  onUpdateTopicDrop: (id: string, d: Partial<TopicDrop>) => void;
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -80,7 +80,7 @@ export function PodcastView({
   const [dropText, setDropText] = useState('');
   const [dropper, setDropper] = useState('');
   const [synthText, setSynthText] = useState('');
-  const [synthEpisodeId, setSynthEpisodeId] = useState<number | null>(null);
+  const [synthEpisodeId, setSynthEpisodeId] = useState<string | null>(null);
 
   // ── Rhythm Strip ────────────────────────────────────────────────────────────
   const today = new Date();
@@ -161,11 +161,11 @@ export function PodcastView({
     setShowAddDrop(false);
   };
 
-  const handleLockTopic = (epId: number) => {
+  const handleLockTopic = (epId: string) => {
     onUpdateEpisode(epId, { status: 'topic locked' });
   };
 
-  const handleMoveStatus = (epId: number, newStatus: Episode['status']) => {
+  const handleMoveStatus = (epId: string, newStatus: Episode['status']) => {
     onUpdateEpisode(epId, { status: newStatus });
   };
 
@@ -334,7 +334,7 @@ export function PodcastView({
   );
 
   const renderTopicWell = () => {
-    const drops = topicDrops.sort((a, b) => (b.id || 0) - (a.id || 0));
+    const drops = [...topicDrops].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
     const candidates = drops.filter(d => d.candidate);
     const rawDrops = drops.filter(d => !d.candidate && !d.locked);
 

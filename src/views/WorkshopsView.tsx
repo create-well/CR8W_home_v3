@@ -212,7 +212,7 @@ export function WorkshopsView({
             key={t}
             className={tab === t ? 'btn-primary' : 'btn-ghost'}
             style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-            onClick={() => setTab(t)}
+            onClick={() => setTab(t as typeof tab)}
           >
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>

@@ -149,7 +149,6 @@ export interface Task {
   tag?: string;
   person?: string;
   createdAt?: string;
-  createdAt?: string;
   updatedAt?: string;
 }
 
