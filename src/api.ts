@@ -403,7 +403,7 @@ export interface SyncData {
   workshopResources: WorkshopResource[];
   coflowDates: CoFlowDate[];
   coflowCheckins: CoFlowCheckin[];
-  wellNotes: WellNote[];
+  wellNotes?: WellNote[];
   calendarEvents: CalendarEventKV[];
   // v3 fields (may be empty until backend supports them)
   applicants?: Applicant[];

@@ -112,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'cr8w_tasks','cr8w_stations','cr8w_forum','cr8w_messages',
         'cr8w_braindumps','cr8w_announcements','cr8w_forum_replies',
         'cr8w_workshop_programs','cr8w_workshop_resources',
-        'cr8w_coflow_dates','cr8w_well_notes','cr8w_calendar_events',
+        'cr8w_coflow_dates','cr8w_calendar_events','cr8w_collaborators',
         'cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps',
       ];
       const { data: kvRows, error: kvErr } = await sb().from(TABLE).select('key,value').in('key', KEYS);
@@ -159,7 +159,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         forumReplies: m['cr8w_forum_replies']??[],
         workshopPrograms: m['cr8w_workshop_programs']??[], workshopResources: m['cr8w_workshop_resources']??[],
         coflowDates: m['cr8w_coflow_dates']??[],
-        wellNotes: m['cr8w_well_notes']??[], calendarEvents: m['cr8w_calendar_events']??[],
+        calendarEvents: m['cr8w_calendar_events']??[],
+        collaborators: m['cr8w_collaborators']??[],
         chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[],
         wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
         // New table resources (real-time, table-backed)
