@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const hook = await readFile(new URL('../src/hooks/useWellNotesRealtime.ts', import.meta.url), 'utf8');
+const view = await readFile(new URL('../src/views/WellView.tsx', import.meta.url), 'utf8');
+const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+
+test('Well Notes exposes typed loading, live, and error states', () => {
+  assert.match(hook, /WellNotesRealtimeStatus = 'loading' \| 'connecting' \| 'live' \| 'error'/);
+  assert.match(hook, /const status: WellNotesRealtimeStatus = loading \? 'loading' : error \? 'error' : 'live'/);
+  assert.match(view, /data-testid="well-notes-status"/);
+  assert.match(view, /aria-live="polite"/);
+});
+
+test('retry recovery resets state and recreates the realtime channel', () => {
+  assert.match(hook, /setRetryNonce\(value => value \+ 1\)/);
+  assert.match(hook, /useEffect\(\(\) => \{ fetchAll\(\); \}, \[fetchAll, retryNonce\]\)/);
+  assert.match(hook, /channel\(`well-notes-changes-\$\{retryNonce\}`\)/);
+  assert.match(view, /data-testid="well-notes-retry"/);
+  assert.match(view, /onClick=\{onRetryWellNotes\}/);
+});
+
+test('App passes resilience state and retry handler into WellView', () => {
+  assert.match(app, /status: wellNotesStatus, error: wellNotesError, retry: retryWellNotes/);
+  assert.match(app, /wellNotesStatus=\{wellNotesStatus\}/);
+  assert.match(app, /wellNotesError=\{wellNotesError\}/);
+  assert.match(app, /onRetryWellNotes=\{retryWellNotes\}/);
+});
