@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import type { ForumPost, ForumReply, BrainDump } from '../api';
-import type { SbWellNote } from '../hooks/useWellNotesRealtime';
+import type { SbWellNote, WellNotesRealtimeStatus } from '../hooks/useWellNotesRealtime';
 
 interface Props {
   forum: ForumPost[];
   forumReplies: ForumReply[];
   wellNotes: SbWellNote[];
+  wellNotesStatus: WellNotesRealtimeStatus;
+  wellNotesError: string | null;
+  onRetryWellNotes: () => void;
   brainDumps: BrainDump[];
   onAddForumPost: (post: Omit<ForumPost, 'id' | 'created_at'>) => void;
   onAddForumReply: (postId: number, reply: { author: string; content: string }) => void;
@@ -14,7 +17,7 @@ interface Props {
   onAddBrainDump: (dump: Omit<BrainDump, 'id' | 'created_at'>) => void;
 }
 
-export function WellView({ forum, forumReplies, wellNotes, brainDumps, onAddForumPost, onAddForumReply, onAddWellNote, onLandWellNote, onAddBrainDump }: Props) {
+export function WellView({ forum, forumReplies, wellNotes, wellNotesStatus, wellNotesError, onRetryWellNotes, brainDumps, onAddForumPost, onAddForumReply, onAddWellNote, onLandWellNote, onAddBrainDump }: Props) {
   const [tab, setTab] = useState<'forum' | 'drops' | 'braindumps'>('forum');
   const [forumContent, setForumContent] = useState('');
   const [forumTag, setForumTag] = useState('');
@@ -51,6 +54,12 @@ export function WellView({ forum, forumReplies, wellNotes, brainDumps, onAddForu
       <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
         Async drops. Ideas, downloads, threads. The water holds what you release.
       </p>
+      <div data-testid="well-notes-status" role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', marginBottom: 16, borderRadius: 8, background: wellNotesStatus === 'error' ? '#f7e1d8' : 'var(--cream)' }}>
+        <span>{wellNotesStatus === 'live' ? '● Well live' : wellNotesStatus === 'connecting' ? '○ Reconnecting to the Well…' : wellNotesStatus === 'loading' ? '○ Loading the Well…' : wellNotesError || 'The Well is temporarily unavailable.'}</span>
+        {(wellNotesStatus === 'error' || wellNotesStatus === 'connecting') && (
+          <button data-testid="well-notes-retry" className="btn-ghost" type="button" onClick={onRetryWellNotes} style={{ padding: '4px 10px' }}>Retry</button>
+        )}
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {(['forum', 'drops', 'braindumps'] as const).map(t => (

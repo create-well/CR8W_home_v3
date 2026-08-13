@@ -134,7 +134,7 @@ export default function App() {
   } = useLeadsRealtime();
 
   // Well notes — live-synced via Supabase real-time (v3.2)
-  const { notes: wellNotes, addNote, landNote } = useWellNotesRealtime();
+  const { notes: wellNotes, status: wellNotesStatus, error: wellNotesError, retry: retryWellNotes, addNote, landNote } = useWellNotesRealtime();
 
   const [showTerminal, setShowTerminal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -383,6 +383,9 @@ export default function App() {
           forum={forum}
           forumReplies={forumReplies}
           wellNotes={wellNotes}
+          wellNotesStatus={wellNotesStatus}
+          wellNotesError={wellNotesError}
+          onRetryWellNotes={retryWellNotes}
           brainDumps={brainDumps}
           onAddForumPost={addForumPost}
           onAddForumReply={addForumReply}

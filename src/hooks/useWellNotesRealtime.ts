@@ -11,6 +11,8 @@ export interface SbWellNote {
   created_at: string;
 }
 
+export type WellNotesRealtimeStatus = 'loading' | 'connecting' | 'live' | 'error';
+
 function mapNote(row: any): SbWellNote {
   return {
     id: row.id,
@@ -23,6 +25,7 @@ function mapNote(row: any): SbWellNote {
 export function useWellNotesRealtime() {
   const [notes, setNotes] = useState<SbWellNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   // Ascending order matches the legacy KV list (append-only, oldest first),
@@ -44,17 +47,17 @@ export function useWellNotesRealtime() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll, retryNonce]);
 
   useEffect(() => {
     const channel = supabase
-      .channel('well-notes-changes')
+      .channel(`well-notes-changes-${retryNonce}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'well_notes' }, () => {
         fetchAll();
       })
       .subscribe();
     return () => { channel.unsubscribe(); };
-  }, [fetchAll]);
+  }, [fetchAll, retryNonce]);
 
   const addNote = useCallback(async (content: string) => {
     const { data, error } = await supabase.from('well_notes').insert({
@@ -74,5 +77,7 @@ export function useWellNotesRealtime() {
     setNotes(prev => prev.map(n => n.id === id ? { ...n, landed } : n));
   }, [notes]);
 
-  return { notes, loading, error, addNote, landNote };
+  const retry = useCallback(() => { setError(null); setLoading(true); setRetryNonce(value => value + 1); }, []);
+  const status: WellNotesRealtimeStatus = loading ? 'loading' : error ? 'error' : 'live';
+  return { notes, loading, status, error, retry, addNote, landNote };
 }
