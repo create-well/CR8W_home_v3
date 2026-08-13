@@ -378,7 +378,7 @@ export default function App() {
         />
       )}
 
-      {dataLoaded && currentView === 'well' && (
+      {currentView === 'well' && (
         <WellView
           forum={forum}
           forumReplies={forumReplies}

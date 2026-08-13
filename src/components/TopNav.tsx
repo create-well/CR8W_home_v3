@@ -30,7 +30,7 @@ export function TopNav({ views, currentView, onNavigate, syncStatus, syncTime, p
         <div className="topnav-links">
           {views.map(v => (
             <button
-              key={v.key}
+              key={v.key} data-testid={`nav-${v.key}`}
               className={`topnav-link ${currentView === v.key ? 'active' : ''}`}
               onClick={() => onNavigate(v.key)}
             >
