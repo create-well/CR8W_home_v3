@@ -53,7 +53,7 @@ function mapPage(page) {
 }
 
 export async function googleAccessToken(env = process.env, subject = '') {
-  if (env.GOOGLE_SHEETS_ACCESS_TOKEN) return env.GOOGLE_SHEETS_ACCESS_TOKEN;
+  if (env.GOOGLE_SHEETS_ACCESS_TOKEN && !subject) return env.GOOGLE_SHEETS_ACCESS_TOKEN;
   if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) throw new Error('Set GOOGLE_SHEETS_ACCESS_TOKEN or GOOGLE_SERVICE_ACCOUNT_JSON');
   const service = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
   const now = Math.floor(Date.now() / 1000);
@@ -96,8 +96,7 @@ async function sheetsBatchUpdate(config, rows, backupRows, token) {
   });
 }
 
-export async function writeSheets(rows, backupRows, env = process.env) {
-  const config = getConfig(env);
+async function writeSheetsWithConfig(config, rows, backupRows, env = process.env) {
   let response = await sheetsBatchUpdate(config, rows, backupRows, await googleAccessToken(env));
   if (response.ok) return response.json();
 
@@ -111,6 +110,10 @@ export async function writeSheets(rows, backupRows, env = process.env) {
   throw new Error(`Google Sheets write failed: ${response.status} ${firstFailure}`);
 }
 
+export async function writeSheets(rows, backupRows, env = process.env) {
+  return writeSheetsWithConfig(getConfig(env), rows, backupRows, env);
+}
+
 export async function main(env = process.env) {
   const config = getConfig(env);
   const pages = await notionQuery(config);
@@ -118,7 +121,7 @@ export async function main(env = process.env) {
   const now = new Date().toISOString();
   const backupRows = mapped.map(({ url, hash }) => [crypto.randomUUID(), now, 'Notion Revenue Ops', url, hash, 'UPSERT', config.syncOwner || 'automation', 'READY', '', 'Source snapshot written by recurring worker']);
   const summary = { dryRun: config.dryRun, records: mapped.length, source: `collection://${config.dataSourceId}`, target: config.sheetId, hashes: mapped.map((x) => x.hash) };
-  if (!config.dryRun) await writeSheets(mapped.map((x) => x.row), backupRows, env);
+  if (!config.dryRun) await writeSheetsWithConfig(config, mapped.map((x) => x.row), backupRows, env);
   console.log(JSON.stringify(summary, null, 2));
 }
 
