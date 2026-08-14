@@ -61,7 +61,9 @@ export function serializeRow(tableName: string, row: Record<string, any>, config
   if (config.format === 'json') return stableJson({ sync_table: tableName, id: String(row.id), payload: row });
   const contentField = config.contentField || 'content';
   const body = String(row[contentField] ?? '');
-  const frontmatter = stableJson({ sync_table: tableName, id: String(row.id), payload: { ...row, [contentField]: undefined } });
+  const payload = { ...row };
+  delete payload[contentField];
+  const frontmatter = stableJson({ sync_table: tableName, id: String(row.id), payload });
   return `---\n${frontmatter}\n---\n\n${body}\n`;
 }
 
