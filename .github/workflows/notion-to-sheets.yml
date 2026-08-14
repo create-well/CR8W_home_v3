@@ -37,3 +37,18 @@ jobs:
           node-version: '22'
       - name: Run Notion to Sheets worker
         run: node scripts/notion-to-sheets.mjs
+
+      - name: Publish sync health summary
+        if: always()
+        run: |
+          {
+            echo "## Notion to Google Sheets sync"
+            echo "- Workflow status: ${{ job.status }}"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Commit: ${{ github.sha }}"
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "- Result: completed successfully"
+            else
+              echo "- Result: inspect the failed worker step and logs"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
