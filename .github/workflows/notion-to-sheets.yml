@@ -1,0 +1,39 @@
+name: Notion to Google Sheets backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run without writing to Google Sheets
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: '17 8 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_VERSION: '2025-09-03'
+      NOTION_DATA_SOURCE_ID: ${{ vars.NOTION_DATA_SOURCE_ID }}
+      GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      SYNC_OWNER: ${{ vars.SYNC_OWNER }}
+      REVENUE_RANGE: 'Revenue_Ops!A2:T'
+      BACKUP_RANGE: 'Backup_Log!A2:J'
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Notion to Sheets worker
+        run: node scripts/notion-to-sheets.mjs
