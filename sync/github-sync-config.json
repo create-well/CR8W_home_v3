@@ -1,0 +1,51 @@
+{
+  "repo": "create-well/CR8W_home_v3",
+  "branch": "main",
+  "basePath": "content",
+  "tables": {
+    "well_notes": {
+      "format": "md",
+      "path": "wells/notes/{id}.md",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual",
+      "contentField": "content"
+    },
+    "tasks": {
+      "format": "json",
+      "path": "tasks/{status}/{id}.json",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual"
+    },
+    "topic_drops": {
+      "format": "md",
+      "path": "podcast/topic-drops/{id}.md",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual",
+      "contentField": "text"
+    },
+    "episodes": {
+      "format": "json",
+      "path": "podcast/episodes/ep-{episode_num}.json",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual"
+    },
+    "guests": {
+      "format": "json",
+      "path": "podcast/guests/{id}.json",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual"
+    },
+    "workshops": {
+      "format": "json",
+      "path": "workshops/{id}.json",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual"
+    },
+    "revenue_ops": {
+      "format": "json",
+      "path": "revenue/{id}.json",
+      "direction": "bidirectional",
+      "conflictPolicy": "manual"
+    }
+  }
+}

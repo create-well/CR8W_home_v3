@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cr8w.com/schema/content-manifest.schema.json",
+  "title": "CR8W GitHub Sync Manifest",
+  "type": "object",
+  "required": ["sync_table", "id", "updated_at"],
+  "properties": {
+    "sync_table": { "type": "string" },
+    "id": { "type": "string" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "author": { "type": ["string", "null"] },
+    "status": { "type": ["string", "null"] },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": true
+}
