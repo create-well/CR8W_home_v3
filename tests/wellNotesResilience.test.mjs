@@ -27,3 +27,17 @@ test('App passes resilience state and retry handler into WellView', () => {
   assert.match(app, /wellNotesError=\{wellNotesError\}/);
   assert.match(app, /onRetryWellNotes=\{retryWellNotes\}/);
 });
+
+test('main dashboard exposes purposeful operational links', async () => {
+  const hub = await readFile(new URL('../src/views/HubView.tsx', import.meta.url), 'utf8');
+  assert.match(hub, /label: 'Ops Mirror'/);
+  assert.match(hub, /docs\.google\.com\/spreadsheets\/d\/1GBOY57tM-5h-HfHoGllsbnZGv9tgqlNvjvHQW5RVTdA/);
+  assert.match(hub, /label: 'Notion Sync Hub'/);
+  assert.match(hub, /app\.notion\.com\/p\/ec19c5b25473828b970d81d7012dc08e/);
+});
+
+test('retry recovery remains exposed through the Well view contract', () => {
+  assert.match(view, /wellNotesStatus === 'error' \|\| wellNotesStatus === 'connecting'/);
+  assert.match(view, /wellNotesStatus === 'live' \? '● Well live'/);
+  assert.match(view, /onRetryWellNotes/);
+});

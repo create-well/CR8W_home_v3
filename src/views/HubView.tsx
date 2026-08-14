@@ -41,6 +41,8 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
     { label: 'Working Library', url: 'https://drive.google.com/drive/u/2/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a', emoji: '📁' },
     { label: 'Playdates', url: 'https://drive.google.com/drive/u/2/folders/13QojR2pqwXUtdverYBpW2HDaIk-gjp-m', emoji: '🎨' },
     { label: 'Supabase', url: 'https://app.supabase.com/project/axntibrdivccycxdwlzk', emoji: '⚡' },
+    { label: 'Ops Mirror', url: 'https://docs.google.com/spreadsheets/d/1GBOY57tM-5h-HfHoGllsbnZGv9tgqlNvjvHQW5RVTdA/edit', emoji: '📊' },
+    { label: 'Notion Sync Hub', url: 'https://app.notion.com/p/ec19c5b25473828b970d81d7012dc08e', emoji: '🗂️' },
   ];
 
   return (
