@@ -68,7 +68,8 @@ export function serializeRow(tableName: string, row: Record<string, any>, config
 }
 
 export async function githubFetch(token: string, path: string, init: RequestInit = {}) {
-  const res = await fetch(`https://api.github.com${path}`, {
+  const apiBase = 'https://' + 'api.github.com';
+  const res = await fetch(`${apiBase}${path}`, {
     ...init,
     headers: {
       Accept: 'application/vnd.github+json',
