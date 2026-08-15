@@ -18,17 +18,35 @@ function getConfig(env = process.env) {
     revenueRange: env.REVENUE_RANGE || 'Revenue_Ops!A2:T',
     backupRange: env.BACKUP_RANGE || 'Backup_Log!A2:J',
     syncOwner: env.SYNC_OWNER?.trim() || '',
+    expectedServiceAccountEmail: env.EXPECTED_GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || '',
+    pageSize: Math.min(Math.max(Number(env.PAGE_SIZE || 100), 1), 100),
+    maxRetries: Math.min(Math.max(Number(env.MAX_RETRIES || 3), 0), 5),
   };
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function notionQuery(config) {
-  const response = await fetch(`https://api.notion.com/v1/data_sources/${config.dataSourceId}/query`, {
-    method: 'POST',
-    headers: config.notionHeaders,
-    body: JSON.stringify({ page_size: 100 }),
-  });
-  if (!response.ok) throw new Error(`Notion query failed: ${response.status} ${await response.text()}`);
-  return (await response.json()).results || [];
+  const pages = [];
+  let cursor;
+  do {
+    const body = { page_size: config.pageSize, ...(cursor ? { start_cursor: cursor } : {}) };
+    let response;
+    for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
+      response = await fetch(`https://api.notion.com/v1/data_sources/${config.dataSourceId}/query`, {
+        method: 'POST',
+        headers: config.notionHeaders,
+        body: JSON.stringify(body),
+      });
+      if (response.ok || ![429, 500, 502, 503, 504].includes(response.status) || attempt === config.maxRetries) break;
+      await wait(Math.min(1000 * 2 ** attempt, 8000));
+    }
+    if (!response.ok) throw new Error(`Notion query failed: ${response.status} ${await response.text()}`);
+    const payload = await response.json();
+    pages.push(...(payload.results || []));
+    cursor = payload.has_more ? payload.next_cursor : undefined;
+  } while (cursor);
+  return pages;
 }
 
 function text(property) {
@@ -40,22 +58,56 @@ function text(property) {
   if (property.type === 'select') return property.select?.name || '';
   if (property.type === 'date') return property.date?.start || '';
   if (property.type === 'created_time') return property.created_time || '';
+  if (property.type === 'url') return property.url || '';
   return '';
 }
 
 function mapPage(page) {
   const p = page.properties || {};
-  const row = [page.url || page.id, text(p.Organization), text(p.Owner), text(p['Contact Name']), text(p['Contact Email']), text(p['Actual Close']), text(p.Type), text(p['Linked Podcast Episode']), text(p.Created), text(p['Expected Close']), text(p.Currency), text(p['Linked Workshop ID']), text(p.Amount), text(p.Notes), text(p['Sync Status']), text(p.Stage), '', new Date().toISOString(), '', page.url || page.id];
-  const hash = crypto.createHash('sha256').update(JSON.stringify(row.slice(0, 16))).digest('hex');
-  row[16] = `${row[0]}|${row[8]}`;
-  row[18] = hash;
-  return { row, hash, url: row[0] };
+  const pageId = String(page.id || '');
+  const recordKey = `rev_${pageId.replaceAll('-', '')}`;
+  const values = [
+    pageId,
+    text(p.Organization).trim(),
+    text(p.Owner).trim(),
+    text(p['Contact Name']).trim(),
+    text(p['Contact Email']).trim().toLowerCase(),
+    text(p['Actual Close']),
+    text(p.Type).trim(),
+    text(p['Linked Podcast Episode']).trim(),
+    text(p.Created),
+    text(p['Expected Close']),
+    text(p.Currency).trim(),
+    text(p['Linked Workshop ID']),
+    text(p.Amount),
+    text(p.Notes).trim(),
+    text(p['Sync Status']).trim(),
+    text(p.Stage).trim(),
+    recordKey,
+    new Date().toISOString(),
+    '',
+    page.url || pageId,
+  ];
+  const hashInput = values.slice(1, 16);
+  const hash = crypto.createHash('sha256').update(JSON.stringify(hashInput)).digest('hex');
+  values[18] = hash;
+  return { row: values, hash, url: values[19], recordKey };
 }
 
 export async function googleAccessToken(env = process.env, subject = '') {
   if (env.GOOGLE_SHEETS_ACCESS_TOKEN && !subject) return env.GOOGLE_SHEETS_ACCESS_TOKEN;
   if (!env.GOOGLE_SERVICE_ACCOUNT_JSON) throw new Error('Set GOOGLE_SHEETS_ACCESS_TOKEN or GOOGLE_SERVICE_ACCOUNT_JSON');
-  const service = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  let service;
+  try {
+    service = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  } catch {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON');
+  }
+  if (!service.client_email || !service.private_key) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must include client_email and private_key');
+  const expected = env.EXPECTED_GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  if (expected && service.client_email !== expected) {
+    throw new Error(`Google service-account identity mismatch: expected ${expected}, received ${service.client_email}`);
+  }
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(JSON.stringify({
@@ -119,8 +171,14 @@ export async function main(env = process.env) {
   const pages = await notionQuery(config);
   const mapped = pages.map(mapPage);
   const now = new Date().toISOString();
-  const backupRows = mapped.map(({ url, hash }) => [crypto.randomUUID(), now, 'Notion Revenue Ops', url, hash, 'UPSERT', config.syncOwner || 'automation', 'READY', '', 'Source snapshot written by recurring worker']);
-  const summary = { dryRun: config.dryRun, records: mapped.length, source: `collection://${config.dataSourceId}`, target: config.sheetId, hashes: mapped.map((x) => x.hash) };
+  const backupRows = mapped.map(({ url, hash, recordKey }) => [crypto.randomUUID(), now, 'Notion Revenue Ops', url, recordKey, 'UPSERT', config.syncOwner || 'automation', 'READY', '', `Record hash ${hash}`]);
+  const summary = {
+    dryRun: config.dryRun,
+    records: mapped.length,
+    source: `collection://${config.dataSourceId}`,
+    target: config.sheetId,
+    hashes: mapped.map((x) => x.hash),
+  };
   if (!config.dryRun) await writeSheetsWithConfig(config, mapped.map((x) => x.row), backupRows, env);
   console.log(JSON.stringify(summary, null, 2));
 }

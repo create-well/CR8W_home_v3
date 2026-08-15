@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { writeSheets } from '../scripts/notion-to-sheets.mjs';
+import { googleAccessToken, main, writeSheets } from '../scripts/notion-to-sheets.mjs';
 
 const originalFetch = global.fetch;
 
@@ -70,6 +70,49 @@ test('writeSheets retries with owner impersonation after a permission-denied res
   assert.equal(tokenPayloads.length, 2);
   assert.equal(tokenPayloads[0].sub, undefined);
   assert.equal(tokenPayloads[1].sub, env.SYNC_OWNER);
+});
+
+test('googleAccessToken rejects a mismatched expected service-account identity', async () => {
+  const env = createEnv({ EXPECTED_GOOGLE_SERVICE_ACCOUNT_EMAIL: 'expected@example.com' });
+  await assert.rejects(
+    () => googleAccessToken(env),
+    /Google service-account identity mismatch: expected expected@example.com, received service-account@example.com/,
+  );
+});
+
+test('main paginates Notion results and writes stable record keys to both ranges', async (t) => {
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const env = createEnv({ DRY_RUN: '0', EXPECTED_GOOGLE_SERVICE_ACCOUNT_EMAIL: 'service-account@example.com' });
+  const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  env.GOOGLE_SERVICE_ACCOUNT_JSON = JSON.stringify({ client_email: 'service-account@example.com', private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }) });
+  let notionCalls = 0;
+  let writeBody;
+
+  global.fetch = async (url, options = {}) => {
+    if (url.includes('/v1/data_sources/source-id/query')) {
+      notionCalls += 1;
+      const payload = notionCalls === 1
+        ? { results: [{ id: '11111111-1111-1111-1111-111111111111', url: 'https://notion.so/one', properties: { Organization: { type: 'title', title: [{ plain_text: 'One' }] }, Owner: { type: 'select', select: { name: 'Monny' } }, Type: { type: 'select', select: { name: 'grant' } }, Currency: { type: 'select', select: { name: 'USD' } }, 'Sync Status': { type: 'select', select: { name: 'Pending' } }, Stage: { type: 'select', select: { name: 'prospect' } } } }], has_more: true, next_cursor: 'next' }
+        : { results: [{ id: '22222222-2222-2222-2222-222222222222', url: 'https://notion.so/two', properties: { Organization: { type: 'title', title: [{ plain_text: 'Two' }] }, Owner: { type: 'select', select: { name: 'Monny' } }, Type: { type: 'select', select: { name: 'sponsor' } }, Currency: { type: 'select', select: { name: 'USD' } }, 'Sync Status': { type: 'select', select: { name: 'Pending' } }, Stage: { type: 'select', select: { name: 'pitched' } } } }], has_more: false }
+      return new Response(JSON.stringify(payload), { status: 200 });
+    }
+    if (url === 'https://oauth2.googleapis.com/token') return new Response(JSON.stringify({ access_token: 'token' }), { status: 200 });
+    if (url.includes('/values:batchUpdate')) {
+      writeBody = JSON.parse(options.body);
+      return new Response(JSON.stringify({ updatedRange: env.REVENUE_RANGE }), { status: 200 });
+    }
+    throw new Error(`Unexpected fetch url: ${url}`);
+  };
+
+  await main(env);
+  assert.equal(notionCalls, 2);
+  assert.equal(writeBody.data[0].values.length, 2);
+  assert.equal(writeBody.data[0].values[0][0], '11111111-1111-1111-1111-111111111111');
+  assert.equal(writeBody.data[0].values[0][16], 'rev_11111111111111111111111111111111');
+  assert.equal(writeBody.data[1].values[0][4], 'rev_11111111111111111111111111111111');
 });
 
 test('writeSheets surfaces the original 403 when no owner impersonation is configured', async (t) => {

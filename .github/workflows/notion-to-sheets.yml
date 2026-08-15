@@ -24,6 +24,9 @@ jobs:
       NOTION_DATA_SOURCE_ID: ${{ vars.NOTION_DATA_SOURCE_ID }}
       GOOGLE_SHEET_ID: ${{ vars.GOOGLE_SHEET_ID }}
       GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      EXPECTED_GOOGLE_SERVICE_ACCOUNT_EMAIL: cr8w-sheets-sync@cr8w-505503.iam.gserviceaccount.com
+      PAGE_SIZE: '100'
+      MAX_RETRIES: '3'
       SYNC_OWNER: ${{ vars.SYNC_OWNER }}
       REVENUE_RANGE: 'Revenue_Ops!A2:T'
       BACKUP_RANGE: 'Backup_Log!A2:J'

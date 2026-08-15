@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0.0",
+  "database": "Revenue Ops",
+  "sourceOfTruth": "Notion",
+  "identity": {
+    "notionPageId": {
+      "required": true,
+      "type": "system",
+      "description": "Immutable Notion page UUID. Never derive identity from organization name, email, or title."
+    },
+    "recordKey": {
+      "required": true,
+      "type": "rich_text",
+      "format": "rev_<notionPageIdWithoutDashes>",
+      "description": "Stable external key copied into the mirror and backup rows."
+    }
+  },
+  "properties": [
+    {"notionName":"Organization","type":"title","required":true,"sheetColumn":"B","normalization":"trim"},
+    {"notionName":"Owner","type":"select","required":true,"sheetColumn":"C","options":["Monny","Istorya","Take Home Studio","Unassigned"]},
+    {"notionName":"Contact Name","type":"rich_text","required":false,"sheetColumn":"D","normalization":"trim"},
+    {"notionName":"Contact Email","type":"email","required":false,"sheetColumn":"E","normalization":"lowercase"},
+    {"notionName":"Actual Close","type":"date","required":false,"sheetColumn":"F","format":"YYYY-MM-DD"},
+    {"notionName":"Type","type":"select","required":true,"sheetColumn":"G","options":["sponsor","grant","donation","merch","ticket","other"]},
+    {"notionName":"Linked Podcast Episode","type":"url","required":false,"sheetColumn":"H","normalization":"trim"},
+    {"notionName":"Created","type":"created_time","required":true,"sheetColumn":"I","format":"ISO-8601"},
+    {"notionName":"Expected Close","type":"date","required":false,"sheetColumn":"J","format":"YYYY-MM-DD"},
+    {"notionName":"Currency","type":"select","required":true,"sheetColumn":"K","options":["USD","PHP","CAD","EUR","Other"]},
+    {"notionName":"Linked Workshop ID","type":"number","required":false,"sheetColumn":"L","integer":true},
+    {"notionName":"Amount","type":"number","required":false,"sheetColumn":"M","minimum":0},
+    {"notionName":"Notes","type":"rich_text","required":false,"sheetColumn":"N","normalization":"trim"},
+    {"notionName":"Sync Status","type":"select","required":true,"sheetColumn":"O","options":["Pending","Synced","Error","Archived"],"writeBack":true},
+    {"notionName":"Stage","type":"select","required":true,"sheetColumn":"P","options":["prospect","pitched","negotiating","closed-won","closed-lost","paused"]},
+    {"notionName":"Record Key","type":"rich_text","required":true,"sheetColumn":"Q","readOnly":true},
+    {"notionName":"Last Mirrored","type":"date","required":false,"sheetColumn":"R","readOnly":true,"format":"ISO-8601"},
+    {"notionName":"Record Hash","type":"rich_text","required":false,"sheetColumn":"S","readOnly":true},
+    {"notionName":"Internal Link","type":"url","required":false,"sheetColumn":"T","readOnly":true}
+  ],
+  "sheets": {
+    "revenueRange": "Revenue_Ops!A2:T",
+    "backupRange": "Backup_Log!A2:J",
+    "revenueColumns": ["notion_page_id","organization","owner","contact_name","contact_email","actual_close","type","linked_podcast_episode","created","expected_close","currency","linked_workshop_id","amount","notes","sync_status","stage","record_key","last_mirrored","record_hash","internal_link"],
+    "backupColumns": ["snapshot_id","snapshot_time","source","source_record_url","record_key","action","owner","status","payload_json","notes"]
+  },
+  "rules": {
+    "neverDeleteMirrorRows": true,
+    "upsertKey": "record_key",
+    "hashInputColumns": ["organization","owner","contact_name","contact_email","actual_close","type","linked_podcast_episode","created","expected_close","currency","linked_workshop_id","amount","notes","sync_status","stage"],
+    "pageSize": 100,
+    "paginationRequired": true,
+    "writeMode": "batchUpdate",
+    "dryRunDefault": true
+  }
+}
