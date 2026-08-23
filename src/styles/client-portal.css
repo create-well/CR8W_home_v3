@@ -1,37 +1,51 @@
-/* Client Portal UI additions */
+/* Take Home Studio — Client Portal UI */
+
+:root {
+  --ths-ink: #17233a;
+  --ths-blue: #244b7a;
+  --ths-light: #e8f0f8;
+  --ths-gold: #d59b3b;
+  --ths-sage: #34764d;
+  --ths-yellow: #a66b00;
+  --ths-red: #a83832;
+  --ths-paper: #fff;
+  --ths-muted: #667085;
+  --ths-line: #ccd5e1;
+  --ths-sand: #f4f6f8;
+}
 
 .btn-sm {
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 7px;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   border: none;
-  background: var(--sandstone);
-  color: var(--charcoal);
+  background: var(--ths-line);
+  color: var(--ths-ink);
   transition: background 0.2s;
 }
-.btn-sm:hover { background: var(--camel); color: white; }
+.btn-sm:hover { background: var(--ths-blue); color: white; }
 
 .btn-tab {
   padding: 8px 14px;
-  border-radius: var(--radius-md);
+  border-radius: 7px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  background: var(--sandstone);
-  color: var(--charcoal);
+  background: var(--ths-line);
+  color: var(--ths-ink);
   transition: all 0.2s;
 }
 .btn-tab.active {
-  background: var(--charcoal);
+  background: var(--ths-blue);
   color: white;
 }
-.btn-tab:hover:not(.active) { background: var(--camel); color: white; }
+.btn-tab:hover:not(.active) { background: var(--ths-gold); color: white; }
 
-.badge-muted { background: #B0A89A; color: white; }
-.badge-warning { background: #D4A771; color: white; }
+.badge-muted { background: #8c94a3; color: white; }
+.badge-warning { background: var(--ths-yellow); color: white; }
 
 .client-login-toggle {
   display: flex;
@@ -41,15 +55,15 @@
 }
 .client-login-toggle button {
   padding: 6px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 7px;
   border: none;
-  background: var(--sandstone);
-  color: var(--charcoal);
+  background: var(--ths-line);
+  color: var(--ths-ink);
   font-weight: 500;
   cursor: pointer;
 }
 .client-login-toggle button.active {
-  background: var(--charcoal);
+  background: var(--ths-blue);
   color: white;
 }
 
@@ -62,15 +76,23 @@
 .cr8w-table td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--sandstone);
+  border-bottom: 1px solid var(--ths-line);
 }
 .cr8w-table th {
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--ths-muted);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .cr8w-table tbody tr:hover {
-  background: rgba(0,0,0,0.02);
+  background: rgba(36, 75, 122, 0.04);
 }
+
+/* THS status badges */
+.badge-ths-draft { background: var(--ths-line); color: var(--ths-ink); }
+.badge-ths-sent { background: var(--ths-light); color: var(--ths-blue); }
+.badge-ths-paid { background: var(--ths-sage); color: white; }
+.badge-ths-overdue { background: var(--ths-red); color: white; }
+.badge-ths-shared { background: var(--ths-gold); color: white; }
+.badge-ths-approved { background: var(--ths-sage); color: white; }
