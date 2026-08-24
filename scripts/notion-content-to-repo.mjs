@@ -22,6 +22,10 @@ const headers = {
 const text = (property) =>
   (property?.rich_text || property?.title || []).map((item) => item.plain_text).join('').trim();
 
+const select = (property) => property?.select?.name || null;
+const date = (property) => property?.date?.start || null;
+const url = (property) => property?.url || null;
+
 const slugify = (value) =>
   value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -70,7 +74,9 @@ async function pageBody(pageId) {
       return valueText;
     })
     .filter(Boolean)
-    .join('\n\n');
+    .join('
+
+');
 }
 
 async function main() {
@@ -79,9 +85,25 @@ async function main() {
 
   for (const page of pages) {
     const properties = page.properties || {};
-    const title = text(properties.Name) || text(properties.Title) || 'Untitled';
-    const slug = text(properties.Slug) || slugify(title) || page.id.replaceAll('-', '');
-    const document = `---\ntitle: ${JSON.stringify(title)}\nslug: ${JSON.stringify(slug)}\nnotionId: ${JSON.stringify(page.id)}\nlastEdited: ${JSON.stringify(page.last_edited_time)}\nseoTitle: ${JSON.stringify(text(properties['SEO Title']) || title)}\nseoDescription: ${JSON.stringify(text(properties['SEO Description']))}\n---\n\n${await pageBody(page.id)}\n`;
+    const title = text(properties.Name) || 'Untitled';
+    const slug = slugify(title) || page.id.replaceAll('-', '');
+    const copy = text(properties.Copy);
+    const body = copy || await pageBody(page.id);
+    const document = `---
+title: ${JSON.stringify(title)}
+slug: ${JSON.stringify(slug)}
+notionId: ${JSON.stringify(page.id)}
+contentType: ${JSON.stringify(select(properties['Content Type']))}
+publishDate: ${JSON.stringify(date(properties['Publish Date']))}
+assetUrl: ${JSON.stringify(url(properties['URL']))}
+assetSource: ${JSON.stringify(select(properties.Where))}
+lastEdited: ${JSON.stringify(page.last_edited_time)}
+seoTitle: ${JSON.stringify(title)}
+seoDescription: ${JSON.stringify(copy.slice(0, 160))}
+---
+
+${body}
+`;
     generated.push({ path: `${slug}.mdx`, content: document });
   }
 
@@ -93,7 +115,8 @@ async function main() {
   await rm(OUTPUT_DIR, { recursive: true, force: true });
   await mkdir(OUTPUT_DIR, { recursive: true });
   for (const file of generated) await writeFile(path.join(OUTPUT_DIR, file.path), file.content);
-  await writeFile(path.join(OUTPUT_DIR, 'manifest.json'), JSON.stringify({ generatedAt: new Date().toISOString(), count: generated.length, files: generated.map((item) => item.path) }, null, 2) + '\n');
+  await writeFile(path.join(OUTPUT_DIR, 'manifest.json'), JSON.stringify({ generatedAt: new Date().toISOString(), count: generated.length, files: generated.map((item) => item.path) }, null, 2) + '
+');
   console.log(`Generated ${generated.length} public content file(s) in ${OUTPUT_DIR}.`);
 }
 
