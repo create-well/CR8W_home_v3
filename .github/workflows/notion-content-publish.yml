@@ -1,0 +1,47 @@
+name: Publish Notion content
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Preview published records without committing generated files
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-content-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: recalibration/notion-first
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate public content
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          NOTION_CONTENT_DATA_SOURCE_ID: ${{ secrets.NOTION_CONTENT_DATA_SOURCE_ID }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: node scripts/notion-content-to-repo.mjs
+
+      - name: Commit generated files
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "cr8w-content-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add content/generated
+          git diff --cached --quiet && exit 0
+          git commit -m "content: sync published Notion records"
+          git push origin HEAD:recalibration/notion-first
