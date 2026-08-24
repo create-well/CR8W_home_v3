@@ -2,3 +2,9 @@ project_id = "axntibrdivccycxdwlzk"
 
 [functions.server]
 entrypoint = "./functions/server/index.tsx"
+
+[functions.sync-from-notion]
+entrypoint = "./functions/sync-from-notion/index.ts"
+
+[functions.sync-to-notion]
+entrypoint = "./functions/sync-to-notion/index.ts"
