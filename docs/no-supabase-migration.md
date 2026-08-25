@@ -74,31 +74,48 @@ Notes, Owner, Next Invitation, and every relation are intentionally unexposed.
 These matter while the project remains live. They stop mattering once it is
 retired, which is the argument for not lingering in a half-migrated state.
 
-## Audited Supabase inventory
+## Verified Supabase inventory
 
 Project `axntibrdivccycxdwlzk` ("CR8W Dashboard v2"), region us-west-1,
-status ACTIVE_HEALTHY. 22 public tables:
+status ACTIVE_HEALTHY. Exact `COUNT(*)` verification on 2026-08-24 found
+**64 rows across 22 public tables**:
 
-| Table | Rows |
-| --- | --- |
-| `coflow_checkins` | 237 |
+| Table | Exact rows |
+| --- | ---: |
 | `kv_store_8dcd9693` | 19 |
 | `mirror_people` | 10 |
 | `profiles` | 7 |
 | `tasks` | 5 |
 | `activities` | 4 |
-| `topic_drops` | 3 |
 | `mirror_flows` | 3 |
-| `events`, `ideas`, `workshops`, `event_leads` | 2 each |
-| `episodes`, `guests`, `mirror_sync_runs` | 1 each |
-| `team_members`, `applicants`, `revenue_ops`, `workshop_feedback`, `calendar_events`, `well_notes`, `mirror_moves` | 0 |
+| `topic_drops` | 3 |
+| `coflow_checkins` | 2 |
+| `event_leads` | 2 |
+| `events` | 2 |
+| `ideas` | 2 |
+| `workshops` | 2 |
+| `episodes` | 1 |
+| `guests` | 1 |
+| `mirror_sync_runs` | 1 |
+| `applicants` | 0 |
+| `calendar_events` | 0 |
+| `mirror_moves` | 0 |
+| `revenue_ops` | 0 |
+| `team_members` | 0 |
+| `well_notes` | 0 |
+| `workshop_feedback` | 0 |
 
-Five active Edge Functions: `make-server-8dcd9693`, `sync-to-notion`,
+`coflow_checkins` contains two test rows, not 237 operational records. It
+requires no archive or migration. The prior 237 count was a stale planner
+estimate, not an exact count.
+
+Five active Edge Functions remain: `make-server-8dcd9693`, `sync-to-notion`,
 `sync-from-notion`, `server`, `sync-notion-permissions`.
 
-The row counts are the real finding. Outside `coflow_checkins`, this is a small
-dataset wrapped in a large amount of infrastructure. Most tables are empty or
-nearly so, and `mirror_*` duplicates what Notion already owns.
+The verified counts reinforce the migration choice: this is a small amount of
+legacy application state, plus duplicated Notion mirrors, wrapped in a large
+amount of Supabase infrastructure. `mirror_*` duplicates facts Notion already
+owns and should be retired after their Vercel→Notion consumers are replaced.
 
 ## Migration order
 
@@ -110,10 +127,10 @@ nearly so, and `mirror_*` duplicates what Notion already owns.
 4. **Remaining views.** Repeat per screen. Ten realtime hooks currently exist:
    leads, tasks, coflow, revenue, podcast, workshops, workshop feedback,
    calendar, well notes, and the dashboard hub.
-5. **`coflow_checkins`.** 237 rows is the only dataset that needs a real
-   decision. Either export it into Notion as a database or accept it as a
-   historical archive outside the app. Do not leave it stranded in a project
-   scheduled for deletion.
+5. **Legacy review.** The two `coflow_checkins` rows are test data and require
+   no migration. Review the 19-key KV store and the remaining small task,
+   content, event, and profile records for either Notion migration or deliberate
+   retirement; do not recreate empty tables.
 6. **Removal.** After a full rollback window with no Supabase traffic, delete
    the client SDK, `supabase/`, and stale env vars in one reviewed PR.
 
