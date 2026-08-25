@@ -250,44 +250,6 @@ async function syncApplicants(token: string, supabase: any, dbId: string) {
   return { table: "applicants", created, updated, skipped };
 }
 
-async function syncCoflow(token: string, supabase: any, dbId: string) {
-  const pages = await queryAllDbPages(token, dbId);
-  let created = 0, updated = 0, skipped = 0;
-  for (const page of pages) {
-    const p = page.properties;
-    if (getSyncStatus(p) === "Synced") { skipped++; continue; }
-    const profile = getSelect(p, "Profile");
-    const meetingDate = getDate(p, "Week Of");
-    const payload = {
-      profile_id: profile,
-      body_status: getRichText(p, "Body Status"),
-      creative_pulse: getRichText(p, "Mood"),
-      blockers: null,
-      needs: null,
-      meeting_date: meetingDate,
-    };
-    let existing = null;
-    if (profile && meetingDate) {
-      const { data } = await supabase.from("coflow_checkins").select("id").eq("profile_id", profile).eq("meeting_date", meetingDate).maybeSingle();
-      existing = data;
-    }
-    let err;
-    if (existing?.id) {
-      const res = await supabase.from("coflow_checkins").update(payload).eq("id", existing.id);
-      err = res.error;
-    } else {
-      const res = await supabase.from("coflow_checkins").insert(payload);
-      err = res.error;
-    }
-    if (err) console.error("coflow error:", err.message);
-    else {
-      await updateNotionPage(token, page.id, { "Sync Status": { select: { name: "Synced" } } });
-      existing?.id ? updated++ : created++;
-    }
-  }
-  return { table: "coflow_checkins", created, updated, skipped };
-}
-
 async function syncWorkshops(token: string, supabase: any, dbId: string) {
   const pages = await queryAllDbPages(token, dbId);
   let created = 0, updated = 0, skipped = 0;
@@ -407,7 +369,6 @@ serve(async (req) => {
     const dbEpisodes = getDbId("NOTION_DB_EPISODES");
     const dbGuests = getDbId("NOTION_DB_GUESTS");
     const dbApplicants = getDbId("NOTION_DB_APPLICANTS");
-    const dbCoflow = getDbId("NOTION_DB_COFLOW");
     const dbWorkshops = getDbId("NOTION_DB_WORKSHOPS");
     const dbTopicDrops = getDbId("NOTION_DB_TOPIC_DROPS");
 
@@ -422,9 +383,6 @@ serve(async (req) => {
 
     if (dbApplicants) results.push(await syncApplicants(NOTION_TOKEN, supabase, dbApplicants));
     else results.push({ table: "applicants", note: "No NOTION_DB_APPLICANTS secret" });
-
-    if (dbCoflow) results.push(await syncCoflow(NOTION_TOKEN, supabase, dbCoflow));
-    else results.push({ table: "coflow_checkins", note: "No NOTION_DB_COFLOW secret" });
 
     if (dbWorkshops) results.push(await syncWorkshops(NOTION_TOKEN, supabase, dbWorkshops));
     else results.push({ table: "workshops", note: "No NOTION_DB_WORKSHOPS secret" });
