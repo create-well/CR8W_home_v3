@@ -1,30 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface Props {
   onAuthenticated: (profile: string) => void;
 }
 
-const PROFILES = [
-  { key: 'sunshine', name: 'Sunshine', emoji: '☀️', color: '#D4A771' },
-  { key: 'monny', name: 'Monny', emoji: '◎', color: '#C25B38' },
-  { key: 'bingle', name: 'Bingle', emoji: '◉', color: '#7A9E7E' },
-  { key: 'omar', name: 'Omar', emoji: '⚡', color: '#5B8BA0' },
-  { key: 'pia', name: 'Pia', emoji: '🌙', color: '#8A7D72' },
-];
-
-export function AuthGate({ onAuthenticated }: Props) {
-  const [pass, setPass] = useState('');
-  const [error, setError] = useState('');
-  const [selected, setSelected] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selected) { setError('Choose who you are'); return; }
-    if (pass !== 'monnytinks') { setError('Wrong password'); return; }
-    localStorage.setItem('cr8w_profile', selected);
-    onAuthenticated(selected);
-  };
-
+export function AuthGate({ onAuthenticated: _onAuthenticated }: Props) {
   return (
     <div data-testid="auth-gate" style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -37,42 +17,14 @@ export function AuthGate({ onAuthenticated }: Props) {
           style={{ height: 40, width: 'auto', display: 'block', margin: '0 auto 12px' }}
         />
         <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>
-          Collective dashboard. Who are you today?
+          Dashboard access is temporarily disabled.
         </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
-          {PROFILES.map(p => (
-            <button
-              key={p.key} data-testid={`auth-profile-${p.key}`} aria-pressed={selected === p.key}
-              onClick={() => { setSelected(p.key); setError(''); }}
-              style={{
-                padding: '14px 10px', borderRadius: 'var(--radius-md)',
-                background: selected === p.key ? p.color : 'var(--sandstone)',
-                color: selected === p.key ? 'white' : 'var(--charcoal)',
-                border: 'none', fontWeight: 600, fontSize: '0.9rem',
-                cursor: 'pointer', transition: 'all 0.2s',
-                boxShadow: selected === p.key ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-              }}
-            >
-              <span style={{ fontSize: '1.3rem', display: 'block', marginBottom: 4 }}>{p.emoji}</span>
-              {p.name}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <input
-            type="password" data-testid="auth-password" name="password" autoComplete="current-password"
-            placeholder="Password"
-            value={pass}
-            onChange={e => { setPass(e.target.value); setError(''); }}
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-          {error && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}
-          <button data-testid="auth-submit" type="submit" className="btn-primary" style={{ width: '100%' }}>
-            Enter the well
-          </button>
-        </form>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 12, fontSize: '0.9rem' }}>
+          Authenticated routes require a server-issued session before this dashboard can be re-enabled.
+        </p>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 0, fontSize: '0.9rem' }}>
+          Access will remain closed until that session flow is implemented.
+        </p>
       </div>
     </div>
   );

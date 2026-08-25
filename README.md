@@ -1,6 +1,6 @@
 # CR8W Home v3 (Create Well Dashboard)
 
-Team dashboard for the Create Well Collective. React/Vite/Supabase, deployed to Vercel.
+Team dashboard for the Create Well Collective. React/Vite app deployed to Vercel.
 
 > Live: https://cr8w.com  
 > Repo: https://github.com/create-well/CR8W_home_v3
@@ -8,16 +8,24 @@ Team dashboard for the Create Well Collective. React/Vite/Supabase, deployed to 
 ## Stack
 
 - **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS
-- **Backend:** Supabase (Postgres + Realtime + Edge Functions)
-- **Auth:** Profile-based (localStorage) + Supabase profiles table for roles
+- **Target data contract:** Notion canonical writes + mirror outputs
+- **Legacy backend surfaces:** Supabase (Postgres + Realtime + Edge Functions) and KV paths retained for rollback only
+- **Auth status:** Access disabled until server-issued session auth is implemented
 - **Host:** Vercel (static build)
 - **Notion Sync:** Bidirectional via Edge Functions (`sync-to-notion`, `sync-from-notion`)
 
-## Architecture: Hybrid (Realtime + Legacy)
+## Architecture: Target vs Legacy
 
-v3 introduced Supabase real-time tables for core production data. Legacy KV store still handles some features.
+### 🎯 Target architecture (approved)
+- Notion is the canonical write surface.
+- Google Sheets and repository outputs are mirrors/backups.
+- No new Supabase features or migrations are allowed while migration remains unresolved.
+- See `docs/architecture-decision.md` for the current ADR contract.
 
-### ✅ Realtime (Supabase tables + hooks)
+### ⚠️ Legacy implementation (rollback surfaces only)
+Current runtime still includes Supabase real-time tables and legacy KV polling paths. These remain available for rollback and continuity, but are not the approved long-term write architecture.
+
+### Legacy realtime tables + hooks
 | Feature | Table(s) | Hook |
 |---------|----------|------|
 | Calendar Events | `calendar_events` | `useCalendarRealtime` |
@@ -26,7 +34,7 @@ v3 introduced Supabase real-time tables for core production data. Legacy KV stor
 | Workshops | `workshops`, `applicants` | `useWorkshopRealtime` |
 | Revenue | `revenue_ops` | `useRevenueRealtime` |
 
-### ⚠️ Legacy (KV store via API polling)
+### Legacy KV store via API polling
 | Feature | Notes |
 |---------|-------|
 | Tasks | Planned for v3.1 migration |
@@ -47,14 +55,15 @@ v3 introduced Supabase real-time tables for core production data. Legacy KV stor
 ## Notion Integration
 
 - **Workspace:** hello@takehome.studio
-- Token + DB IDs stored in Supabase secrets (via `get_notion_secrets()` RPC)
+- Token is referenced as `NOTION_TOKEN` secret material and must never be committed
+- DB IDs currently loaded via Supabase secrets (via `get_notion_secrets()` RPC)
 - Databases: Episodes, Guests, Topic Drops, Workshops, Applicants, Revenue, CoFlow Check-ins
 
 ## Team Access
 
 Profiles: monny, sunshine, bingle, omar (core), pia (co-creator)
 
-Role-based views filter what each person sees.
+Role-based views are legacy behavior. Dashboard access is currently fail-closed until server-issued sessions are implemented.
 
 ## Running locally
 
