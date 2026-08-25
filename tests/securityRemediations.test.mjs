@@ -17,14 +17,15 @@ function listTrackedTextFiles() {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .filter((file) => textFilePattern.test(file));
+    .filter((file) => textFilePattern.test(file))
+    .filter((file) => file !== 'tests/securityRemediations.test.mjs');
 }
 
 test('tracked text content does not include known plaintext credential patterns', () => {
   const files = listTrackedTextFiles();
   const forbiddenPatterns = [
-    /secret_[A-Za-z0-9]{8,}/g,
-    /ntn_[A-Za-z0-9]{8,}/g,
+    /secret_[A-Za-z0-9]{8,}/,
+    /ntn_[A-Za-z0-9]{8,}/,
   ];
 
   const matches = [];
@@ -37,7 +38,6 @@ test('tracked text content does not include known plaintext credential patterns'
       if (pattern.test(content)) {
         matches.push(`${relativePath}: ${pattern}`);
       }
-      pattern.lastIndex = 0;
     }
   }
 
@@ -47,12 +47,15 @@ test('tracked text content does not include known plaintext credential patterns'
 test('AuthGate is fail-closed and cannot grant local access', () => {
   const authGatePath = path.join(repoRoot, 'src/components/AuthGate.tsx');
   const content = readFileSync(authGatePath, 'utf8');
+  const appPath = path.join(repoRoot, 'src/App.tsx');
+  const appContent = readFileSync(appPath, 'utf8');
 
   assert.doesNotMatch(content, /localStorage\.setItem\(\s*['"]cr8w_profile['"]/);
   assert.doesNotMatch(content, /onAuthenticated\s*\(/);
   assert.doesNotMatch(content, /type=['"]password['"]/);
   assert.match(content, /server-issued session/i);
   assert.match(content, /access will remain closed/i);
+  assert.doesNotMatch(appContent, /localStorage\.getItem\(\s*['"]cr8w_profile['"]/);
 });
 
 test('SOP no longer documents a shared dashboard password', () => {

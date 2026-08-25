@@ -160,5 +160,6 @@ If Figma Make sync breaks the build:
 - Subhead: Fredoka Regular (12-16pt)
 - Body: Blinker Regular (10-14pt)
 - Alt Body: Montserrat Regular (paragraphs)
+
 ## Security Note
 The previously exposed Notion credential must be revoked and rotated outside GitHub immediately. Repository history cleanup for prior exposure is a separate owner action and is not performed in this PR.

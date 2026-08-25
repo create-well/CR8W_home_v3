@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface Props {
-  onAuthenticated: (profile: string) => void;
-}
-
-export function AuthGate({ onAuthenticated: _onAuthenticated }: Props) {
+export function AuthGate() {
   return (
     <div data-testid="auth-gate" style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
