@@ -18,7 +18,7 @@
 | **Google Drive** | https://drive.google.com/drive/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a | monica.istorya@gmail.com |
 
 **Important tokens (DO NOT share outside core team):**
-- Notion integration token: `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`
+- Notion integration token: `<set-in-vercel-environment-variables>`
 - Supabase project ref: `axntibrdivccycxdwlzk`
 - Vercel project ID: `prj_KMc00vxHpX0v9rbP87p031ruwZIK`
 
