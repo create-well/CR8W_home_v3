@@ -27,6 +27,7 @@ import { useLeadsRealtime } from './hooks/useLeadsRealtime';
 import { useWellNotesRealtime } from './hooks/useWellNotesRealtime';
 import { DashboardProvider } from './context/DashboardContext';
 import { SyncStatusBar } from './components/SyncStatusBar';
+import { DashboardViewIntro } from './components/DashboardViewIntro';
 import { ViewShell } from './components/ViewShell';
 import type { ModuleState } from './types/dashboard';
 import { PublicContentIndex, PublicContentPage } from './views/PublicContent';
@@ -375,6 +376,7 @@ function DashboardApp() {
         restrictedMessage="This view is not available for your current role or consent settings."
       >
 
+      <DashboardViewIntro view={currentView} />
       {!dataLoaded && (
         <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', marginBottom: 8 }}>Loading the well...</div>
