@@ -1,0 +1,67 @@
+name: Notion content to website
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Query and render without changing generated content
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: '37 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-content-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_CONTENT_DATA_SOURCE_ID: ${{ vars.NOTION_CONTENT_DATA_SOURCE_ID }}
+      NOTION_VERSION: '2025-09-03'
+      NOTION_PUBLISHED_STATUSES: ${{ vars.NOTION_PUBLISHED_STATUSES || 'Published' }}
+      CONTENT_DIR: content
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Render published Notion pages
+        run: node scripts/notion-content-sync.mjs
+
+      - name: Commit generated content
+        if: github.event_name == 'schedule' || inputs.dry_run == false
+        run: |
+          if git diff --quiet -- content; then
+            echo "No published content changes."
+            exit 0
+          fi
+          git config user.name "createwell-content-sync[bot]"
+          git config user.email "createwell-content-sync[bot]@users.noreply.github.com"
+          git add content
+          git commit -m "chore(content): sync published Notion pages"
+          git push
+
+      - name: Publish sync summary
+        if: always()
+        run: |
+          {
+            echo "## Notion content sync"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Workflow status: ${{ job.status }}"
+            echo "- Commit: ${{ github.sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"
