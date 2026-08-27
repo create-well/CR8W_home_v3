@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { SbRevenueOp } from '../hooks/useRevenueRealtime';
 import type { SbWorkshop } from '../hooks/useWorkshopRealtime';
+import { canStewardSourceFlow } from '../lib/dashboardPermissions';
 
 interface Props {
   opportunities: SbRevenueOp[];
@@ -43,6 +44,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
   const [rExpected, setRExpected] = useState('');
   const [rNotes, setRNotes] = useState('');
   const [rOwner, setROwner] = useState('monny');
+  const sourceStewards = ['monny', 'sunshine', 'bingle', 'omar', 'pia'].filter(canStewardSourceFlow);
 
   const filtered = opportunities.filter(o => {
     if (filterType !== 'all' && o.type !== filterType) return false;
@@ -236,11 +238,9 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
               <div className="form-group">
                 <label>Owner</label>
                 <select value={rOwner} onChange={e => setROwner(e.target.value)}>
-                  <option value="monny">Monny</option>
-                  <option value="sunshine">Sunshine</option>
-                  <option value="bingle">Bingle</option>
-                  <option value="omar">Omar</option>
-                  <option value="pia">Pia</option>
+                  {sourceStewards.map(steward => (
+                    <option key={steward} value={steward}>{steward[0].toUpperCase() + steward.slice(1)}</option>
+                  ))}
                 </select>
               </div>
             </div>
