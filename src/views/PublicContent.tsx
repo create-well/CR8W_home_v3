@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ArrowLeft, ArrowUpRight, BookOpen, CalendarDays, FileText } from 'lucide-react';
-import { getPublicContent, getPublicContentBySlug } from '../lib/content';
+import { getPublicContent, getPublicContentBySlug, type SyncedContent } from '../lib/content';
 import { MarkdownContent } from '../components/MarkdownContent';
 
 function formatDate(value: string): string {
@@ -40,6 +40,13 @@ function ContentType({ type }: { type: string }) {
   return <span className="public-content-type">{type || 'Field Note'}</span>;
 }
 
+function ContentDateText({ item }: { item: SyncedContent }) {
+  const date = item.publishedAt || item.syncedAt;
+  if (!date) return null;
+
+  return <>{item.publishedAt ? 'Published' : 'Updated'} {formatDate(date)}</>;
+}
+
 export function PublicContentIndex() {
   const items = getPublicContent();
 
@@ -64,7 +71,7 @@ export function PublicContentIndex() {
               <article className="public-content-card" key={item.slug}>
                 <div className="public-content-card-meta">
                   <ContentType type={item.type} />
-                  {item.syncedAt && <span>{formatDate(item.syncedAt)}</span>}
+                  <span><ContentDateText item={item} /></span>
                 </div>
                 <h2><a href={`/content/${encodeURIComponent(item.slug)}`}>{item.title}</a></h2>
                 {item.description && <p>{item.description}</p>}
@@ -106,8 +113,8 @@ export function PublicContentPage({ slug }: { slug: string }) {
             <ContentType type={item.type} />
             <h1>{item.title}</h1>
             {item.description && <p className="public-content-article-dek">{item.description}</p>}
-            {item.syncedAt && (
-              <p className="public-content-date"><CalendarDays size={15} aria-hidden="true" /> Updated {formatDate(item.syncedAt)}</p>
+            {(item.publishedAt || item.syncedAt) && (
+              <p className="public-content-date"><CalendarDays size={15} aria-hidden="true" /> <ContentDateText item={item} /></p>
             )}
           </header>
           <div className="public-content-prose">

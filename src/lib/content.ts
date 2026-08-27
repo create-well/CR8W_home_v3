@@ -4,6 +4,7 @@ export type SyncedContent = {
   type: string;
   audience: string;
   description: string;
+  publishedAt: string;
   notionPageId: string;
   syncedAt: string;
   body: string;
@@ -59,6 +60,7 @@ export function parseSyncedContent(raw: string, sourcePath = ''): SyncedContent 
     type: frontmatter.type || 'Field Note',
     audience: frontmatter.audience || 'Public',
     description: frontmatter.description || '',
+    publishedAt: frontmatter.publishDate || frontmatter.published_at || '',
     notionPageId: frontmatter.notionId || frontmatter.notion_page_id || '',
     syncedAt: frontmatter.lastEdited || frontmatter.synced_at || '',
     body: match[2].trim(),
@@ -66,8 +68,8 @@ export function parseSyncedContent(raw: string, sourcePath = ''): SyncedContent 
 }
 
 function compareContent(a: SyncedContent, b: SyncedContent): number {
-  const aDate = Date.parse(a.syncedAt);
-  const bDate = Date.parse(b.syncedAt);
+  const aDate = Date.parse(a.publishedAt || a.syncedAt);
+  const bDate = Date.parse(b.publishedAt || b.syncedAt);
 
   if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) {
     return bDate - aDate;

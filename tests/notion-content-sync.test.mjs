@@ -37,18 +37,20 @@ test('pageToFrontmatter uses an explicit slug and falls back safely to the title
       Title: { type: 'title', title: [{ plain_text: 'Hello, Create Well!' }] },
       Status: { type: 'select', select: { name: 'Published' } },
       Type: { type: 'select', select: { name: 'essay' } },
+      'Publish Date': { type: 'date', date: { start: '2026-08-27' } },
     },
   };
   const frontmatter = pageToFrontmatter(page, config);
   assert.equal(frontmatter.slug, 'hello-create-well');
   assert.equal(frontmatter.status, 'Published');
+  assert.equal(frontmatter.publishDate, '2026-08-27');
   assert.equal(frontmatter.notionId, page.id);
 });
 
 test('renderMdx writes frontmatter and supported blocks', () => {
   const output = renderMdx({
     title: 'Flowing', slug: 'flowing', type: 'essay', audience: 'collective', description: 'A note',
-    status: 'Published', notionId: 'id', notionUrl: 'https://notion.so/id', lastEdited: 'now',
+    publishDate: '2026-08-27', status: 'Published', notionId: 'id', notionUrl: 'https://notion.so/id', lastEdited: 'now',
   }, [
     { type: 'heading_1', heading_1: { rich_text: [{ plain_text: 'Flowing > Forcing', annotations: {} }] } },
     { type: 'paragraph', paragraph: { rich_text: [
@@ -60,6 +62,7 @@ test('renderMdx writes frontmatter and supported blocks', () => {
   ]);
   assert.match(output, /^---\n/);
   assert.match(output, /title: "Flowing"/);
+  assert.match(output, /publishDate: "2026-08-27"/);
   assert.match(output, /# Flowing > Forcing/);
   assert.match(output, /A \*\*living\*\* practice\./);
   assert.match(output, /- Arrive well/);

@@ -10,6 +10,7 @@ test('public content loader understands current and legacy sync metadata', async
 
   assert.match(source, /notionId \|\| frontmatter\.notion_page_id/);
   assert.match(source, /lastEdited \|\| frontmatter\.synced_at/);
+  assert.match(source, /publishDate \|\| frontmatter\.published_at/);
   assert.match(source, /filter\(\(item\) => item\.audience\.trim\(\)\.toLowerCase\(\) === 'public'\)/);
 });
 
@@ -28,6 +29,8 @@ test('public content rendering is dependency-free and uses the restricted local 
   ]);
 
   assert.match(view, /<MarkdownContent markdown=\{item\.body \|\| item\.description\} \/>/);
+  assert.match(view, /item\.publishedAt \|\| item\.syncedAt/);
+  assert.match(view, /item\.publishedAt \? 'Published' : 'Updated'/);
   assert.equal(view.includes('dangerouslySetInnerHTML'), false);
   assert.equal(renderer.includes('dangerouslySetInnerHTML'), false);
   assert.match(renderer, /function safeUrl/);
