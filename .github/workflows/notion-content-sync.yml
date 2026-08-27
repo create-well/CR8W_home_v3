@@ -28,7 +28,9 @@ jobs:
       # NOTION_CONTENT_DATA_SOURCE_ID for Notion's newer data-source API.
       NOTION_CONTENT_DB: ${{ vars.NOTION_CONTENT_DB }}
       NOTION_CONTENT_DATA_SOURCE_ID: ${{ vars.NOTION_CONTENT_DATA_SOURCE_ID }}
-      NOTION_VERSION: ${{ vars.NOTION_VERSION || '2025-09-03' }}
+      # Leave unset by default so the worker selects 2022-06-28 for
+      # NOTION_CONTENT_DB and 2025-09-03 for NOTION_CONTENT_DATA_SOURCE_ID.
+      NOTION_VERSION: ${{ vars.NOTION_VERSION }}
       NOTION_PUBLISHED_STATUSES: ${{ vars.NOTION_PUBLISHED_STATUSES || 'Published' }}
       NOTION_STATUS_PROPERTY: ${{ vars.NOTION_STATUS_PROPERTY || 'Status' }}
       NOTION_TITLE_PROPERTY: ${{ vars.NOTION_TITLE_PROPERTY }}
