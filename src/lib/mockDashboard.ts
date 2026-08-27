@@ -9,7 +9,7 @@ export const mockDashboard: DashboardPayload = {
   lastSyncedAt: new Date().toISOString(),
   syncState: 'fresh',
   permissions: {
-    canViewMoney: true,
+    canViewSourceFlow: true,
     canViewDecisions: true,
     canViewSystem: true,
     careConsent: 'blocked',
@@ -19,7 +19,7 @@ export const mockDashboard: DashboardPayload = {
     moves: 'empty-but-healthy',
     care: 'permission-restricted',
     flows: 'empty-but-healthy',
-    money: 'empty-but-healthy',
+    sourceFlow: 'empty-but-healthy',
     decisions: 'empty-but-healthy',
     system: 'ready',
   },
@@ -27,7 +27,7 @@ export const mockDashboard: DashboardPayload = {
     tasks: [],
     careInvitations: [],
     flows: [],
-    money: [],
+    sourceFlow: [],
     decisions: [],
   },
 };

@@ -50,11 +50,11 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
     return true;
   });
 
-  const totalPipeline = filtered
+  const totalInFlow = filtered
     .filter(o => !['closed-lost', 'paused'].includes(o.stage))
     .reduce((sum, o) => sum + (o.amount || 0), 0);
 
-  const totalClosed = filtered
+  const totalLanded = filtered
     .filter(o => o.stage === 'closed-won')
     .reduce((sum, o) => sum + (o.amount || 0), 0);
 
@@ -78,33 +78,36 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <h1>✦ Revenue</h1>
-        <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Opportunity</button>
+        <div>
+          <h1>✦ The Source</h1>
+          <p style={{ color: 'var(--text-muted)', margin: '-4px 0 0' }}>Resource flow held with care, clarity, and shared structure.</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Open a channel</button>
       </div>
 
       {/* KPI Cards */}
       <div className="view-grid" style={{ marginBottom: 24 }}>
         <div className="card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pipeline</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In flow</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--rust)', marginTop: 4 }}>
-            ${totalPipeline.toLocaleString()}
+            ${totalInFlow.toLocaleString()}
           </div>
         </div>
         <div className="card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Closed</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Landed</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--success)', marginTop: 4 }}>
-            ${totalClosed.toLocaleString()}
+            ${totalLanded.toLocaleString()}
           </div>
         </div>
         <div className="card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Opps</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Open channels</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--camel)', marginTop: 4 }}>
             {opportunities.filter(o => !['closed-won', 'closed-lost'].includes(o.stage)).length}
           </div>
         </div>
       </div>
 
-      {/* Stage Pipeline */}
+      {/* Stage resource flow */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
         {['prospect', 'pitched', 'negotiating', 'closed-won', 'closed-lost', 'paused'].map(stage => (
           <div key={stage} style={{
@@ -135,8 +138,8 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
           <option value="prospect">Prospect</option>
           <option value="pitched">Pitched</option>
           <option value="negotiating">Negotiating</option>
-          <option value="closed-won">Closed Won</option>
-          <option value="closed-lost">Closed Lost</option>
+          <option value="closed-won">Landed</option>
+          <option value="closed-lost">Released</option>
         </select>
       </div>
 
@@ -171,8 +174,8 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
                     <option value="prospect">Prospect</option>
                     <option value="pitched">Pitched</option>
                     <option value="negotiating">Negotiating</option>
-                    <option value="closed-won">Closed Won</option>
-                    <option value="closed-lost">Closed Lost</option>
+                    <option value="closed-won">Landed</option>
+                    <option value="closed-lost">Released</option>
                     <option value="paused">Paused</option>
                   </select>
                 </td>
@@ -191,7 +194,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
         </table>
         {filtered.length === 0 && (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px 0' }}>
-            No opportunities yet. Add your first sponsor or grant lead.
+            No channels are open yet. Add the next source of support, exchange, or shared resource.
           </p>
         )}
       </div>
@@ -201,7 +204,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAdd(false); }}>
           <div className="modal-content">
             <div className="modal-header">
-              <span className="modal-title">✦ New Opportunity</span>
+              <span className="modal-title">✦ Open a resource channel</span>
               <button className="modal-close" onClick={() => setShowAdd(false)}>×</button>
             </div>
             <div className="form-group">
@@ -237,6 +240,7 @@ export function RevenueView({ opportunities, workshops, onAddOp, onUpdateOp, onD
                   <option value="sunshine">Sunshine</option>
                   <option value="bingle">Bingle</option>
                   <option value="omar">Omar</option>
+                  <option value="pia">Pia</option>
                 </select>
               </div>
             </div>

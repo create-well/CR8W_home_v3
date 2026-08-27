@@ -9,7 +9,7 @@ export type ModuleState =
 export type SyncState = 'fresh' | 'stale' | 'failed' | 'syncing';
 
 export interface DashboardPermissions {
-  canViewMoney: boolean;
+  canViewSourceFlow: boolean;
   canViewDecisions: boolean;
   canViewSystem: boolean;
   careConsent: 'granted' | 'blocked' | 'unknown';
@@ -25,7 +25,7 @@ export interface DashboardPayload {
     moves: ModuleState;
     care: ModuleState;
     flows: ModuleState;
-    money: ModuleState;
+    sourceFlow: ModuleState;
     decisions: ModuleState;
     system: ModuleState;
   };
@@ -33,7 +33,7 @@ export interface DashboardPayload {
     tasks: readonly unknown[];
     careInvitations: readonly unknown[];
     flows: readonly unknown[];
-    money: readonly unknown[];
+    sourceFlow: readonly unknown[];
     decisions: readonly unknown[];
   };
 }

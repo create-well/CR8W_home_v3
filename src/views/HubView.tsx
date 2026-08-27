@@ -63,7 +63,7 @@ export function HubView({ tasks, workshops, coFlowDates, wellNotes, announcement
             🌊 CoFlow check-in
           </button>
           <button className="btn-secondary" onClick={() => onNavigate('revenue')}>
-            ✦ Revenue
+            ✦ The Source
           </button>
         </div>
       </div>

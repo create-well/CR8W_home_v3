@@ -36,7 +36,7 @@ const ALL_VIEWS: { key: View; label: string; icon: string }[] = [
   { key: 'podcast', label: 'Moves', icon: '↗' },
   { key: 'coflow', label: 'Care', icon: '◌' },
   { key: 'workshops', label: 'FLOWS', icon: '🌿' },
-  { key: 'revenue', label: 'Money', icon: '✦' },
+  { key: 'revenue', label: 'The Source', icon: '✦' },
   { key: 'well', label: 'Decisions', icon: '◇' },
   { key: 'team', label: 'System', icon: '◉' },
 ];
