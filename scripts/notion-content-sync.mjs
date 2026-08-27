@@ -17,14 +17,25 @@ export function getConfig(env = process.env) {
   const outputDir = path.resolve(env.CONTENT_DIR || 'content');
   const allowedStatuses = (env.NOTION_PUBLISHED_STATUSES || 'Published')
     .split(',').map((value) => value.trim()).filter(Boolean);
+  const token = required(env, 'NOTION_TOKEN');
+  const legacyDatabaseId = env.NOTION_CONTENT_DB?.trim();
+  const dataSourceId = env.NOTION_CONTENT_DATA_SOURCE_ID?.trim();
+  const sourceId = (dataSourceId || legacyDatabaseId || '').replace(/^collection:\/\//, '');
+  if (!sourceId) {
+    throw new Error('Missing required environment variable: NOTION_CONTENT_DATA_SOURCE_ID or NOTION_CONTENT_DB');
+  }
+  const sourceKind = dataSourceId ? 'data_source' : 'database';
   return {
-    token: required(env, 'NOTION_TOKEN'),
-    dataSourceId: required(env, 'NOTION_CONTENT_DATA_SOURCE_ID').replace(/^collection:\/\//, ''),
-    notionVersion: env.NOTION_VERSION?.trim() || DEFAULT_NOTION_VERSION,
+    token,
+    sourceId,
+    sourceKind,
+    // `NOTION_CONTENT_DB` is supported for the original Perplexity Space script,
+    // which used Notion’s pre-data-source database query endpoint.
+    notionVersion: env.NOTION_VERSION?.trim() || (sourceKind === 'database' ? '2022-06-28' : DEFAULT_NOTION_VERSION),
     outputDir,
     allowedStatuses,
     statusProperty: env.NOTION_STATUS_PROPERTY?.trim() || 'Status',
-    titleProperty: env.NOTION_TITLE_PROPERTY?.trim() || 'Title',
+    titleProperty: env.NOTION_TITLE_PROPERTY?.trim() || (sourceKind === 'database' ? 'Content Title' : 'Title'),
     slugProperty: env.NOTION_SLUG_PROPERTY?.trim() || 'Slug',
     typeProperty: env.NOTION_TYPE_PROPERTY?.trim() || 'Type',
     audienceProperty: env.NOTION_AUDIENCE_PROPERTY?.trim() || 'Audience',
@@ -61,7 +72,8 @@ export async function queryAllPages(config) {
   const pages = [];
   let cursor;
   do {
-    const payload = await notionRequest(config, `/data_sources/${config.dataSourceId}/query`, {
+    const resource = config.sourceKind === 'database' ? 'databases' : 'data_sources';
+    const payload = await notionRequest(config, `/${resource}/${config.sourceId}/query`, {
       method: 'POST',
       body: JSON.stringify({ page_size: config.pageSize, ...(cursor ? { start_cursor: cursor } : {}) }),
     });

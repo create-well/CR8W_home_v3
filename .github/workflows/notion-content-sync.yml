@@ -24,8 +24,11 @@ jobs:
     timeout-minutes: 15
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      # Use NOTION_CONTENT_DB for the Perplexity Space database contract, or
+      # NOTION_CONTENT_DATA_SOURCE_ID for Notion's newer data-source API.
+      NOTION_CONTENT_DB: ${{ vars.NOTION_CONTENT_DB }}
       NOTION_CONTENT_DATA_SOURCE_ID: ${{ vars.NOTION_CONTENT_DATA_SOURCE_ID }}
-      NOTION_VERSION: '2025-09-03'
+      NOTION_VERSION: ${{ vars.NOTION_VERSION || '2025-09-03' }}
       NOTION_PUBLISHED_STATUSES: ${{ vars.NOTION_PUBLISHED_STATUSES || 'Published' }}
       CONTENT_DIR: content
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}

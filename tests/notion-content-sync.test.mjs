@@ -5,9 +5,18 @@ import { getConfig, pageToFrontmatter, propertyValue, renderMdx } from '../scrip
 test('getConfig requires the Notion token and content data source', () => {
   assert.throws(() => getConfig({}), /NOTION_TOKEN/);
   const config = getConfig({ NOTION_TOKEN: 'token', NOTION_CONTENT_DATA_SOURCE_ID: 'collection://abc' });
-  assert.equal(config.dataSourceId, 'abc');
+  assert.equal(config.sourceId, 'abc');
+  assert.equal(config.sourceKind, 'data_source');
   assert.equal(config.allowedStatuses[0], 'Published');
   assert.equal(config.dryRun, false);
+});
+
+test('legacy database configuration supports the Perplexity Space schema', () => {
+  const config = getConfig({ NOTION_TOKEN: 'token', NOTION_CONTENT_DB: 'database-id' });
+  assert.equal(config.sourceId, 'database-id');
+  assert.equal(config.sourceKind, 'database');
+  assert.equal(config.notionVersion, '2022-06-28');
+  assert.equal(config.titleProperty, 'Content Title');
 });
 
 test('propertyValue normalizes common Notion property types', () => {
