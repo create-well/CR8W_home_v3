@@ -56,6 +56,10 @@ Profiles: monny, sunshine, bingle, omar (core), pia (co-creator)
 
 Role-based views filter what each person sees.
 
+## Figma-to-code workflow
+
+See [`docs/FIGMA_MCP.md`](docs/FIGMA_MCP.md) for supported-editor setup and the recommended workflow for turning Figma designs into reviewed GitHub changes.
+
 ## Running locally
 
 ```bash
