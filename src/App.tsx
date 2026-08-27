@@ -13,6 +13,7 @@ import { WellView } from './views/WellView';
 import { DecisionsView } from './views/DecisionsView';
 import { CoFlowView } from './views/CoFlowView';
 import { TeamView } from './views/TeamView';
+import { SystemView } from './views/SystemView';
 import { RevenueView } from './views/RevenueView';
 import { ImessageTerminal } from './components/iMessageTerminal';
 import { usePodcastRealtime } from './hooks/usePodcastRealtime';
@@ -443,13 +444,7 @@ function DashboardApp() {
       )}
 
       {dataLoaded && currentView === 'team' && (
-        <TeamView
-          collaborators={collaborators}
-          tasks={tasks}
-          stations={stations}
-          onAddCollaborator={addCollaborator}
-          onUpdateCollaborator={updateCollaborator}
-        />
+        <SystemView collaborators={collaborators} tasks={tasks} stations={stations} />
       )}
 
       {dataLoaded && currentView === 'revenue' && (
