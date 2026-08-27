@@ -1,16 +1,6 @@
-/**
- * CR8W Create Well — Vercel API catch-all
- * File-based routing: api/server/[[...path]].ts handles every request to
- *   /api/server          (health check, with path = undefined)
- *   /api/server/sync     (path = ['sync'])
- *   /api/server/tasks/5  (path = ['tasks', '5'])
- *   etc.
- * Vercel automatically populates req.query.path with the matched segments.
- */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Supabase client ───────────────────────────────────────────────────────────
 function sb() {
   const url = process.env.SUPABASE_URL!;
   const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -18,28 +8,23 @@ function sb() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-// ── Auth: accept publishable key (app-gate) or a valid Supabase user JWT ──────
 async function verifyRequest(req: VercelRequest): Promise<boolean> {
   const raw = req.headers.authorization ?? '';
   const token = raw.startsWith('Bearer ') ? raw.slice(7).trim() : '';
   if (!token) return false;
   const pubKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? '';
-  // Fast path: exact match against the publishable key (hash-login sessions)
   if (pubKey && token === pubKey) return true;
-  // JWT path: verify as a Supabase user access token
   if (pubKey) {
     try {
       const c = createClient(process.env.SUPABASE_URL!, pubKey, { auth: { persistSession: false } });
       const { data, error } = await c.auth.getUser(token);
       if (!error && data.user) return true;
-    } catch { /* fall through */ }
+    } catch {}
   }
-  return !pubKey; // allow when no key configured (dev/preview)
+  return !pubKey;
 }
 
 const TABLE = 'kv_store_8dcd9693';
-
-// ── KV helpers ────────────────────────────────────────────────────────────────
 async function kvGet(key: string): Promise<any> {
   const { data, error } = await sb().from(TABLE).select('value').eq('key', key).maybeSingle();
   if (error) throw new Error(error.message);
@@ -57,14 +42,12 @@ function parseList(raw: any): any[] {
 async function getList(key: string): Promise<any[]> { return parseList(await kvGet(key)); }
 async function setList(key: string, list: any[]): Promise<void> { await kvSet(key, JSON.stringify(list)); }
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
 function cors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 }
 
-// ── Body parser ───────────────────────────────────────────────────────────────
 function readBody(req: VercelRequest): Promise<any> {
   return new Promise(resolve => {
     if (req.body) { resolve(req.body); return; }
@@ -74,24 +57,19 @@ function readBody(req: VercelRequest): Promise<any> {
   });
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   cors(res);
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  // Auth gate — health endpoint is public; everything else requires a valid token
   const splitQp = (v: any): string[] => !v ? [] : Array.isArray(v) ? v.flatMap((s: string) => String(s).split('/')).filter(Boolean) : String(v).split('/').filter(Boolean);
   const segCheck = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
   const qpCheck = splitQp(req.query.path);
   const firstSeg = (segCheck.length ? segCheck : qpCheck)[0] ?? '';
-  // Public endpoints: health (any) and signups (POST only — landing-page email capture).
-  // Reading the signups list still requires auth so the email list stays private.
   const isPublicSignup = firstSeg === 'signups' && (req.method ?? 'GET') === 'POST';
   if (firstSeg && firstSeg !== 'health' && !isPublicSignup) {
     if (!await verifyRequest(req)) { res.status(401).json({ error: 'Unauthorized' }); return; }
   }
 
-  // req.query.path is the catch-all: undefined | string | string[]
   const urlSegs = (() => { try { const p = new URL(req.url || '', 'http://x').pathname.replace(/^\/api\/server\/?/, '').replace(/\/$/, ''); return p ? p.split('/').filter(Boolean) : []; } catch { return []; } })();
   const qp = splitQp(req.query.path);
   const pathArr = urlSegs.length ? urlSegs : qp;
@@ -100,37 +78,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const method = req.method ?? 'GET';
 
   try {
-    // ── Health ────────────────────────────────────────────────────────────────
-    if (!resource || resource === 'health') {
-      res.json({ status: 'ok', runtime: 'vercel' }); return;
-    }
+    if (!resource || resource === 'health') { res.json({ status: 'ok', runtime: 'vercel' }); return; }
 
-    // ── Sync ──────────────────────────────────────────────────────────────────
     if (resource === 'sync' && method === 'GET') {
-      // 1) Legacy KV data (non-migrated resources)
-      const KEYS = [
-        'cr8w_tasks','cr8w_stations','cr8w_forum','cr8w_messages',
-        'cr8w_braindumps','cr8w_announcements','cr8w_forum_replies',
-        'cr8w_workshop_programs','cr8w_workshop_resources',
-        'cr8w_coflow_dates','cr8w_calendar_events','cr8w_collaborators',
-        'cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps',
-      ];
+      const KEYS = ['cr8w_tasks','cr8w_stations','cr8w_forum','cr8w_messages','cr8w_braindumps','cr8w_announcements','cr8w_forum_replies','cr8w_workshop_programs','cr8w_workshop_resources','cr8w_coflow_dates','cr8w_calendar_events','cr8w_collaborators','cr8w_chat_reactions','cr8w_chat_replies','cr8w_wellshop_rsvps'];
       const { data: kvRows, error: kvErr } = await sb().from(TABLE).select('key,value').in('key', KEYS);
       if (kvErr) { res.status(500).json({ error: kvErr.message }); return; }
       const m: Record<string, any[]> = {};
       for (const row of kvRows ?? []) m[row.key] = parseList(row.value);
-
-      // 2) New table data (live Supabase tables)
-      const [
-        { data: episodesData, error: epErr },
-        { data: guestsData, error: gErr },
-        { data: topicDropsData, error: tdErr },
-        { data: coflowCheckinsData, error: cfErr },
-        { data: applicantsData, error: appErr },
-        { data: revenueOpsData, error: revErr },
-        { data: workshopsData, error: wsErr },
-        { data: profilesData, error: profErr },
-      ] = await Promise.all([
+      const [episodesData,guestsData,topicDropsData,coflowCheckinsData,applicantsData,revenueOpsData,workshopsData,profilesData] = await Promise.all([
         sb().from('episodes').select('*').order('episode_num', { ascending: false }),
         sb().from('guests').select('*').order('created_at', { ascending: false }),
         sb().from('topic_drops').select('*').order('created_at', { ascending: false }),
@@ -140,76 +96,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sb().from('workshops').select('*').order('workshop_date', { ascending: false }),
         sb().from('profiles').select('*').order('created_at', { ascending: false }),
       ]);
-
-      // Log errors but don't fail the whole sync
-      if (epErr) console.error('[sync] episodes error:', epErr.message);
-      if (gErr) console.error('[sync] guests error:', gErr.message);
-      if (tdErr) console.error('[sync] topic_drops error:', tdErr.message);
-      if (cfErr) console.error('[sync] coflow_checkins error:', cfErr.message);
-      if (appErr) console.error('[sync] applicants error:', appErr.message);
-      if (revErr) console.error('[sync] revenue_ops error:', revErr.message);
-      if (wsErr) console.error('[sync] workshops error:', wsErr.message);
-      if (profErr) console.error('[sync] profiles error:', profErr.message);
-
       res.json({
-        // Legacy KV resources
-        tasks: m['cr8w_tasks']??[], stations: m['cr8w_stations']??[],
-        forum: m['cr8w_forum']??[], messages: m['cr8w_messages']??[],
-        braindumps: m['cr8w_braindumps']??[], announcements: m['cr8w_announcements']??[],
-        forumReplies: m['cr8w_forum_replies']??[],
-        workshopPrograms: m['cr8w_workshop_programs']??[], workshopResources: m['cr8w_workshop_resources']??[],
-        coflowDates: m['cr8w_coflow_dates']??[],
-        calendarEvents: m['cr8w_calendar_events']??[],
-        collaborators: m['cr8w_collaborators']??[],
-        chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[],
-        wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
-        // New table resources (real-time, table-backed)
-        episodes: episodesData ?? [],
-        guests: guestsData ?? [],
-        topicDrops: topicDropsData ?? [],
-        coflowCheckins: coflowCheckinsData ?? [],
-        applicants: applicantsData ?? [],
-        revenueOps: revenueOpsData ?? [],
-        workshops: workshopsData ?? [],
-        profiles: profilesData ?? [],
+        tasks: m['cr8w_tasks']??[], stations: m['cr8w_stations']??[], forum: m['cr8w_forum']??[], messages: m['cr8w_messages']??[], braindumps: m['cr8w_braindumps']??[], announcements: m['cr8w_announcements']??[], forumReplies: m['cr8w_forum_replies']??[], workshopPrograms: m['cr8w_workshop_programs']??[], workshopResources: m['cr8w_workshop_resources']??[], coflowDates: m['cr8w_coflow_dates']??[], calendarEvents: m['cr8w_calendar_events']??[], collaborators: m['cr8w_collaborators']??[], chatReactions: m['cr8w_chat_reactions']??[], chatReplies: m['cr8w_chat_replies']??[], wellshopRsvps: m['cr8w_wellshop_rsvps']??[],
+        episodes: episodesData ?? [], guests: guestsData ?? [], topicDrops: topicDropsData ?? [], coflowCheckins: coflowCheckinsData ?? [], applicants: applicantsData ?? [], revenueOps: revenueOpsData ?? [], workshops: workshopsData ?? [], profiles: profilesData ?? [],
       });
       return;
     }
 
-    // ── Notion sync run history (read-only) ───────────────────────────────────
     if (resource === 'notion-sync-runs' && method === 'GET') {
-      res.json({
-        to: await getList('notion_sync_runs_to'),
-        from: await getList('notion_sync_runs_from'),
-      });
+      res.json({ to: await getList('notion_sync_runs_to'), from: await getList('notion_sync_runs_from') });
       return;
     }
 
-    // ── Forum replies (nested routes) ─────────────────────────────────────────
-    // GET/POST  /forum/:postId/replies
     if (resource === 'forum' && sub === 'replies') {
       const all = await getList('cr8w_forum_replies');
       if (method === 'GET') { res.json(all.filter((r: any) => String(r.postId) === String(id))); return; }
       if (method === 'POST') {
         const b = await readBody(req);
         const reply = { ...b, id: Date.now(), postId: Number(id)||id, created_at: new Date().toISOString() };
-        all.push(reply);
-        await setList('cr8w_forum_replies', all);
-        res.status(201).json(reply); return;
+        all.push(reply); await setList('cr8w_forum_replies', all); res.status(201).json(reply); return;
       }
     }
-    // GET  /forum/replies/all
-    if (resource === 'forum' && id === 'replies' && sub === 'all' && method === 'GET') {
-      res.json(await getList('cr8w_forum_replies')); return;
-    }
-    // DELETE  /forum/replies/:replyId
+    if (resource === 'forum' && id === 'replies' && sub === 'all' && method === 'GET') { res.json(await getList('cr8w_forum_replies')); return; }
     if (resource === 'forum' && id === 'replies' && sub && method === 'DELETE') {
       const all = await getList('cr8w_forum_replies');
       await setList('cr8w_forum_replies', all.filter((r: any) => String(r.id) !== sub));
       res.json({ ok: true }); return;
     }
 
-    // ── Invite counts ─────────────────────────────────────────────────────────
     if (resource === 'invite-counts') {
       if (method === 'GET') {
         const raw = await kvGet('cr8w_invite_counts');
@@ -224,9 +138,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Settings ──────────────────────────────────────────────────────────────
     if (resource === 'settings' && id) {
-      const sk = `cr8w_settings_${id}`;
+      const sk = 'cr8w_settings_' + id;
       if (method === 'GET') {
         const raw = await kvGet(sk);
         const val = raw ? (typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return raw; } })() : raw) : null;
@@ -239,33 +152,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Calendar events ───────────────────────────────────────────────────────
     if (resource === 'calendar-events') {
       if (method === 'GET') { res.json(await getList('cr8w_calendar_events')); return; }
       if (method === 'POST') {
         const b = await readBody(req);
         const evts = Array.isArray(b) ? b : (b.events ?? []);
-        const norm = evts.map((ev: any, i: number) => ({
-          id: ev.id || `gcal-${Date.now()}-${i}`, title: ev.title||'(No title)',
-          start: ev.start||'', end: ev.end||'', location: ev.location||'',
-          description: ev.description||'', creator: ev.creator||'',
-          synced_at: new Date().toISOString(),
-        }));
+        const norm = evts.map((ev: any, i: number) => ({ id: ev.id || 'gcal-' + Date.now() + '-' + i, title: ev.title||'(No title)', start: ev.start||'', end: ev.end||'', location: ev.location||'', description: ev.description||'', creator: ev.creator||'', synced_at: new Date().toISOString() }));
         await setList('cr8w_calendar_events', norm);
         res.json({ ok:true, count: norm.length }); return;
       }
     }
 
-    // ── Parking lot ───────────────────────────────────────────────────────────
     if (resource === 'parking-lot') {
       if (method === 'GET') { res.json(await getList('cr8w_parking_lot')); return; }
       if (method === 'POST') {
         const b = await readBody(req);
         if (Array.isArray(b)) { await setList('cr8w_parking_lot', b); res.json({ ok:true, count: b.length }); return; }
         const lst = await getList('cr8w_parking_lot');
-        const item = { id: b.id||`pl-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, text:b.text||'', category:b.category||'spark', author:b.author||'monny', created_at:b.created_at||new Date().toISOString() };
-        lst.unshift(item);
-        await setList('cr8w_parking_lot', lst);
+        const item = { id: b.id||('pl-' + Date.now() + '-' + Math.random().toString(36).slice(2,8)), text:b.text||'', category:b.category||'spark', author:b.author||'monny', created_at:b.created_at||new Date().toISOString() };
+        lst.unshift(item); await setList('cr8w_parking_lot', lst);
         res.json({ ok:true, item }); return;
       }
       if (method === 'DELETE' && id) {
@@ -275,64 +180,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-
-    // ── iCal Calendar Sync ────────────────────────────────────────────────────
-    // POST /calendar-ical-sync  — fetches CR8W_ICAL_URL, parses VEVENTs, stores
     if (resource === 'calendar-ical-sync' && method === 'POST') {
       const icalUrl = process.env.CR8W_ICAL_URL;
       if (!icalUrl) { res.status(500).json({ error: 'CR8W_ICAL_URL env var not set on Vercel' }); return; }
       try {
         const icalRes = await fetch(icalUrl);
-        if (!icalRes.ok) { res.status(502).json({ error: `iCal fetch failed: ${icalRes.status}` }); return; }
+        if (!icalRes.ok) { res.status(502).json({ error: 'iCal fetch failed: ' + icalRes.status }); return; }
         const text = await icalRes.text();
-
-        // Parse VEVENT blocks
         const events: any[] = [];
         const veventRe = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g;
         let m: RegExpExecArray | null;
         while ((m = veventRe.exec(text)) !== null) {
           const block = m[1];
-          const prop = (name: string) => {
-            const r = new RegExp(String.raw`${name}[^:
-]*:([^\n]+)`);
-            const hit = block.match(r);
-                    return hit ? hit[1].replace(/\r/g, '').replace(/\n/g, ' ').replace(/\,/g, ',').trim() : '';
-          };
-          const rawStart = prop('DTSTART');
-          const rawEnd   = prop('DTEND');
+          const prop = (name: string) => { const r = new RegExp(name + '[^:\\n]*:([^\\n]+)'); const hit = block.match(r); return hit ? hit[1].replace(/\r/g, '').replace(/\n/g, ' ').trim() : ''; };
+          const rawStart = prop('DTSTART'); const rawEnd = prop('DTEND');
           const parseICalDate = (dt: string): string => {
             if (!dt) return '';
-            // All-day: YYYYMMDD (8 digits, no T)
-            if (/^\d{8}$/.test(dt)) return `${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}T00:00:00`;
-            // DateTime with Z: YYYYMMDDTHHMMSSZ
+            if (/^\d{8}$/.test(dt)) return dt.slice(0,4) + '-' + dt.slice(4,6) + '-' + dt.slice(6,8) + 'T00:00:00';
             const clean = dt.replace(/Z$/, '+00:00');
             const iso = clean.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6');
-            const d = new Date(iso);
-            return isNaN(d.getTime()) ? dt : d.toISOString();
+            const d = new Date(iso); return isNaN(d.getTime()) ? dt : d.toISOString();
           };
-          events.push({
-            id: prop('UID') || `ical-${Date.now()}-${events.length}`,
-            title: prop('SUMMARY') || '(No title)',
-            start: parseICalDate(rawStart),
-            end:   parseICalDate(rawEnd),
-            location:    prop('LOCATION'),
-            description: prop('DESCRIPTION'),
-            creator:     '',
-            synced_at:   new Date().toISOString(),
-          });
+          events.push({ id: prop('UID') || ('ical-' + Date.now() + '-' + events.length), title: prop('SUMMARY') || '(No title)', start: parseICalDate(rawStart), end: parseICalDate(rawEnd), location: prop('LOCATION'), description: prop('DESCRIPTION'), creator: '', synced_at: new Date().toISOString() });
         }
-
         await setList('cr8w_calendar_events', events);
         res.json({ ok: true, count: events.length });
         return;
       } catch (e: any) {
         console.error('[ical-sync]', e);
-        res.status(500).json({ error: `iCal sync failed: ${e?.message ?? e}` });
+        res.status(500).json({ error: 'iCal sync failed: ' + (e?.message ?? e) });
         return;
       }
     }
 
-    // ── GCal OAuth token exchange ─────────────────────────────────────────────
     if (resource === 'gcal-token-exchange' && method === 'POST') {
       const { code, code_verifier, redirect_uri, client_id } = await readBody(req);
       if (!code || !redirect_uri || !client_id) { res.status(400).json({ error: 'Missing fields' }); return; }
@@ -347,9 +227,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    // ── Chat reactions (live across profiles) ─────────────────────────────────
-    // GET  /chat-reactions   → list of { messageId, emoji, users[] }
-    // POST /chat-reactions   → body { action:'toggle', messageId, emoji, user } toggles user
     if (resource === 'chat-reactions') {
       const KEY = 'cr8w_chat_reactions';
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
@@ -367,16 +244,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Chat replies (threaded replies on chat messages) ──────────────────────
-    // GET  /chat-replies       → all replies { id, messageId, author, content, ts }
-    // POST /chat-replies       → body { messageId, author, content }
-    // DELETE /chat-replies/:id
     if (resource === 'chat-replies') {
       const KEY = 'cr8w_chat_replies';
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
       if (method === 'POST' && !id) {
         const b = await readBody(req);
-        // Delete via single-segment POST { action:'delete', id } (multi-segment paths don't route)
         if (b.action === 'delete') {
           if (b.id == null) { res.status(400).json({ error: 'id required' }); return; }
           const all = await getList(KEY);
@@ -386,15 +258,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (b.messageId == null || !b.author || !b.content) { res.status(400).json({ error: 'messageId, author, content required' }); return; }
         const all = await getList(KEY);
         const item = { id: b.id || Date.now(), messageId: b.messageId, author: b.author, content: b.content, ts: b.ts || new Date().toISOString() };
-        all.push(item);
-        await setList(KEY, all);
+        all.push(item); await setList(KEY, all);
         res.json({ ok: true, reply: item }); return;
       }
     }
 
-    // ── Wellshop RSVPs (live across profiles) ─────────────────────────────────
-    // GET  /wellshop-rsvps   → list of { catKey, user, status, ts }
-    // POST /wellshop-rsvps   → body { catKey, user, status }; status 'none' removes
     if (resource === 'wellshop-rsvps') {
       const KEY = 'cr8w_wellshop_rsvps';
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
@@ -409,9 +277,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Signups (landing-page email capture) ──────────────────────────────────
-    // POST /signups  { email, name?, source? }  → public (no auth), validated + deduped
-    // GET  /signups                              → gated (auth required, list is private)
     if (resource === 'signups') {
       const KEY = 'cr8w_signups';
       if (method === 'POST' && !id) {
@@ -420,18 +285,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         if (!emailOk) { res.status(400).json({ error: 'A valid email is required.' }); return; }
         const list = await getList(KEY);
-        if (list.some((s: any) => String(s.email).toLowerCase() === email)) {
-          res.status(200).json({ ok: true, deduped: true }); return; // already on the list, treat as success
-        }
-        const entry = {
-          id: Date.now(),
-          email,
-          name: b?.name ? String(b.name).trim().slice(0, 120) : '',
-          source: b?.source ? String(b.source).trim().slice(0, 80) : 'landing',
-          created_at: new Date().toISOString(),
-        };
-        list.push(entry);
-        await setList(KEY, list);
+        if (list.some((s: any) => String(s.email).toLowerCase() === email)) { res.status(200).json({ ok: true, deduped: true }); return; }
+        const entry = { id: Date.now(), email, name: b?.name ? String(b.name).trim().slice(0, 120) : '', source: b?.source ? String(b.source).trim().slice(0, 80) : 'landing', created_at: new Date().toISOString() };
+        list.push(entry); await setList(KEY, list);
         res.status(201).json({ ok: true, email }); return;
       }
       if (method === 'GET' && !id) { res.json(await getList(KEY)); return; }
@@ -442,14 +298,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Generic list CRUD ─────────────────────────────────────────────────────
     const KV: Record<string, string> = {
-      tasks:'cr8w_tasks', stations:'cr8w_stations', forum:'cr8w_forum',
-      messages:'cr8w_messages', braindumps:'cr8w_braindumps', announcements:'cr8w_announcements',
-      workshops:'cr8w_workshops', 'workshop-programs':'cr8w_workshop_programs',
-      'workshop-resources':'cr8w_workshop_resources', 'coflow-dates':'cr8w_coflow_dates',
-      'coflow-checkins':'cr8w_coflow_checkins', 'well-notes':'cr8w_well_notes',
-      episodes:'cr8w_pod_episodes', guests:'cr8w_pod_guests', 'topic-drops':'cr8w_topic_drops',
+      tasks:'cr8w_tasks', stations:'cr8w_stations', forum:'cr8w_forum', messages:'cr8w_messages', braindumps:'cr8w_braindumps', announcements:'cr8w_announcements',
+      workshops:'cr8w_workshops', 'workshop-programs':'cr8w_workshop_programs', 'workshop-resources':'cr8w_workshop_resources', 'coflow-dates':'cr8w_coflow_dates',
+      'coflow-checkins':'cr8w_coflow_checkins', 'well-notes':'cr8w_well_notes', episodes:'cr8w_pod_episodes', guests:'cr8w_pod_guests', 'topic-drops':'cr8w_topic_drops',
       applicants:'cr8w_applicants', collaborators:'cr8w_collaborators', 'revenue-ops':'cr8w_revenue_ops',
     };
     const kvKey = KV[resource];
@@ -462,8 +314,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (['forum','braindumps','announcements'].includes(resource)) list.unshift(item);
         else if (resource === 'messages') { list.push(item); if (list.length > 500) list.splice(0, list.length - 500); }
         else list.push(item);
-        await setList(kvKey, list);
-        res.status(201).json(item); return;
+        await setList(kvKey, list); res.status(201).json(item); return;
       }
       if (method === 'PUT' && id) {
         const b = await readBody(req);
@@ -471,8 +322,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const idx = list.findIndex((x: any) => String(x.id) === id);
         if (idx === -1) { res.status(404).json({ error: 'Not found' }); return; }
         list[idx] = { ...list[idx], ...b, id: list[idx].id, updated_at: new Date().toISOString() };
-        await setList(kvKey, list);
-        res.json(list[idx]); return;
+        await setList(kvKey, list); res.json(list[idx]); return;
       }
       if (method === 'DELETE' && id) {
         const list = await getList(kvKey);
@@ -481,7 +331,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.status(404).json({ error: `Unknown: ${method} /api/server/${pathArr.join('/')}` });
+    if (resource === 'client-portal') {
+      const KEY_MAP: Record<string, string> = {
+        clients: 'cr8w_client_clients', projects: 'cr8w_client_projects', tasks: 'cr8w_client_tasks',
+        invoices: 'cr8w_client_invoices', meetings: 'cr8w_client_meetings', documents: 'cr8w_client_documents',
+      };
+      if (id === 'validate-token' && method === 'POST') {
+        const b = await readBody(req);
+        const clients = await getList(KEY_MAP.clients);
+        const client = clients.find((c: any) => String(c.email).toLowerCase() === String(b.email).toLowerCase());
+        if (client && client.accessToken === b.token) { res.json({ valid: true, client }); }
+        else { res.json({ valid: false }); }
+        return;
+      }
+      const key = KEY_MAP[id];
+      if (!key) { res.status(404).json({ error: 'Unknown client portal entity: ' + id }); return; }
+      if (method === 'GET' && !sub) { res.json(await getList(key)); return; }
+      if (method === 'POST' && !sub) {
+        const b = await readBody(req);
+        const list = await getList(key);
+        const item = { ...b, id: b.id || ('cp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)), createdAt: new Date().toISOString() };
+        list.push(item); await setList(key, list);
+        res.status(201).json(item); return;
+      }
+      if (method === 'PUT' && sub) {
+        const b = await readBody(req);
+        const list = await getList(key);
+        const idx = list.findIndex((x: any) => String(x.id) === sub);
+        if (idx === -1) { res.status(404).json({ error: 'Not found' }); return; }
+        list[idx] = { ...list[idx], ...b, id: list[idx].id, updatedAt: new Date().toISOString() };
+        await setList(key, list); res.json(list[idx]); return;
+      }
+      if (method === 'DELETE' && sub) {
+        const list = await getList(key);
+        await setList(key, list.filter((x: any) => String(x.id) !== sub));
+        res.json({ ok: true }); return;
+      }
+    }
+
+    res.status(404).json({ error: 'Unknown: ' + method + ' /api/server/' + pathArr.join('/') });
   } catch (e: any) {
     console.error('[cr8w-api]', e);
     res.status(500).json({ error: e?.message ?? String(e) });
