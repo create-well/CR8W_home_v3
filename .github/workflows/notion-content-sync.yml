@@ -57,13 +57,13 @@ jobs:
       - name: Commit generated content
         if: github.event_name == 'schedule' || inputs.dry_run == false
         run: |
-          if git diff --quiet -- content; then
+          git add --all -- content
+          if git diff --cached --quiet -- content; then
             echo "No published content changes."
             exit 0
           fi
           git config user.name "createwell-content-sync[bot]"
           git config user.email "createwell-content-sync[bot]@users.noreply.github.com"
-          git add content
           git commit -m "chore(content): sync published Notion pages"
           git push
 
