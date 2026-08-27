@@ -30,6 +30,12 @@ jobs:
       NOTION_CONTENT_DATA_SOURCE_ID: ${{ vars.NOTION_CONTENT_DATA_SOURCE_ID }}
       NOTION_VERSION: ${{ vars.NOTION_VERSION || '2025-09-03' }}
       NOTION_PUBLISHED_STATUSES: ${{ vars.NOTION_PUBLISHED_STATUSES || 'Published' }}
+      NOTION_STATUS_PROPERTY: ${{ vars.NOTION_STATUS_PROPERTY || 'Status' }}
+      NOTION_TITLE_PROPERTY: ${{ vars.NOTION_TITLE_PROPERTY }}
+      NOTION_SLUG_PROPERTY: ${{ vars.NOTION_SLUG_PROPERTY }}
+      NOTION_TYPE_PROPERTY: ${{ vars.NOTION_TYPE_PROPERTY }}
+      NOTION_AUDIENCE_PROPERTY: ${{ vars.NOTION_AUDIENCE_PROPERTY }}
+      NOTION_DESCRIPTION_PROPERTY: ${{ vars.NOTION_DESCRIPTION_PROPERTY }}
       CONTENT_DIR: content
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
     steps:
