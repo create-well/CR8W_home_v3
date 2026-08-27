@@ -1,0 +1,111 @@
+.vfin-shell {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  color: var(--cr8w-text, #2D2A26);
+}
+
+.vfin-shell-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.vfin-eyebrow,
+.vfin-state,
+.vfin-meta {
+  margin: 0;
+  color: var(--text-muted, #7A756E);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.vfin-shell h2,
+.vfin-shell h3,
+.vfin-shell p {
+  margin-top: 0;
+}
+
+.vfin-shell h2 {
+  margin-bottom: 0.25rem;
+  font-family: var(--font-display, Inter, system-ui, sans-serif);
+  font-size: 1.5rem;
+}
+
+.vfin-state {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(212, 160, 74, 0.35);
+  border-radius: 999px;
+  background: rgba(212, 160, 74, 0.08);
+  color: #866125;
+  white-space: nowrap;
+}
+
+.vfin-card {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-soft, #E0DBD5);
+  border-radius: 0.75rem;
+  background: var(--cr8w-card-bg, #fff);
+}
+
+.vfin-card--now { border-left: 3px solid #C47171; }
+.vfin-card--week { border-left: 3px solid #D4A04A; }
+.vfin-card--clear { border-left: 3px solid #7B9E6B; }
+
+.vfin-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.vfin-actions button,
+.vfin-shell button {
+  border: 1px solid var(--border-soft, #E0DBD5);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--cr8w-card-bg, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+
+.vfin-actions button:first-child,
+.vfin-shell button:first-child {
+  border-color: #5B8A72;
+  background: #5B8A72;
+  color: #fff;
+}
+
+.vfin-inline-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #5B8A72;
+  border-radius: 0.75rem;
+  background: rgba(91, 138, 114, 0.05);
+}
+
+.vfin-inline-form input,
+.vfin-inline-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-soft, #E0DBD5);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.vfin-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border-soft, #E0DBD5);
+}
+
+.vfin-status-row:last-child { border-bottom: 0; }
+.vfin-status-ok { color: #4D7A5B; }
+.vfin-status-warn { color: #866125; }
+.vfin-status-error { color: #9B4545; }
+.vfin-status-neutral { color: var(--text-muted, #7A756E); }
