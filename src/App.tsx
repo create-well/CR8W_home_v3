@@ -10,6 +10,7 @@ import { HubView } from './views/HubView';
 import { PodcastView } from './views/PodcastView';
 import { WorkshopsView } from './views/WorkshopsView';
 import { WellView } from './views/WellView';
+import { DecisionsView } from './views/DecisionsView';
 import { CoFlowView } from './views/CoFlowView';
 import { TeamView } from './views/TeamView';
 import { RevenueView } from './views/RevenueView';
@@ -428,22 +429,7 @@ function DashboardApp() {
         />
       )}
 
-      {currentView === 'well' && (
-        <WellView
-          forum={forum}
-          forumReplies={forumReplies}
-          wellNotes={wellNotes}
-          wellNotesStatus={wellNotesStatus}
-          wellNotesError={wellNotesError}
-          onRetryWellNotes={retryWellNotes}
-          brainDumps={brainDumps}
-          onAddForumPost={addForumPost}
-          onAddForumReply={addForumReply}
-          onAddWellNote={addWellNote}
-          onLandWellNote={landWellNote}
-          onAddBrainDump={addBrainDump}
-        />
-      )}
+      {currentView === 'well' && <DecisionsView tasks={tasks} />}
 
       {dataLoaded && currentView === 'coflow' && (
         <CoFlowView
