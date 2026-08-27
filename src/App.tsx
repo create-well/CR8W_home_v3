@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
 import * as api from './api';
 import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate } from './api';
 
@@ -27,6 +27,7 @@ import { DashboardProvider } from './context/DashboardContext';
 import { SyncStatusBar } from './components/SyncStatusBar';
 import { ViewShell } from './components/ViewShell';
 import type { ModuleState } from './types/dashboard';
+import { PublicContentIndex, PublicContentPage } from './views/PublicContent';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
@@ -72,7 +73,7 @@ function viewsForRole(role: Role): View[] {
   return ['hub'];
 }
 
-export default function App() {
+function DashboardApp() {
   const [authed, setAuthed] = useState(() => !!localStorage.getItem('cr8w_profile'));
   const [profile, setProfile] = useState<string>(() => localStorage.getItem('cr8w_profile') || '');
   const [role, setRole] = useState<Role>('public');
@@ -497,5 +498,20 @@ export default function App() {
       >↑</button>
       </div>
     </DashboardProvider>
+  );
+}
+
+function PublicContentRoute() {
+  const { slug } = useParams<{ slug: string }>();
+  return <PublicContentPage slug={slug || ''} />;
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/content" element={<PublicContentIndex />} />
+      <Route path="/content/:slug" element={<PublicContentRoute />} />
+      <Route path="*" element={<DashboardApp />} />
+    </Routes>
   );
 }
