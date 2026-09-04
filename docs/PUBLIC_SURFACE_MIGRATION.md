@@ -48,7 +48,7 @@
 
 ### 1.4 Environment variables involved (names only)
 
-- Waitlist submit backend path (`/api/server/signups`) depends on:
+- Waitlist submit backend route (`POST /signups` on the API handler) depends on:
   - `SUPABASE_URL`
   - `SUPABASE_SECRET_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
