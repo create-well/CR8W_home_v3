@@ -203,6 +203,7 @@ Role gating inside authenticated dashboard:
   - Evidence: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/notion-to-sheets.mjs:L6-L17`, `L36-L37`
 - IDs found in-repo:
   - Concrete Notion identifier literals exist in sample/local files used for sync configuration and generated content metadata.
+  - Files to audit/scrub before migration reuse: `.env.notion-sheets.example`, `local-sheets-write-smoke.mjs`, and `cr8w-publishing-test.mdx`.
   - Values are intentionally omitted from this migration spec; do not copy literal IDs into CR8WDashVfin without re-sourcing them from environment/secret management.
 - Unknown:
   - Active production value(s) of `NOTION_CONTENT_DB` / `NOTION_CONTENT_DATA_SOURCE_ID` used for content publishing (not committed; sourced from GitHub vars/secrets in workflow env).
