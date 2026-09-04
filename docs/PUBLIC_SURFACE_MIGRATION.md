@@ -39,7 +39,7 @@
 
 ### 1.3 Where submissions are stored
 
-- Stored in Supabase table: `kv_store_8dcd9693` (`TABLE`) at:
+- Stored in the Supabase KV backing table referenced by server constant `TABLE` at:
   - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/api/server.ts:L40`
 - Under key `cr8w_signups`:
   - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/api/server.ts:L416`
@@ -289,7 +289,7 @@ Role gating inside authenticated dashboard:
        Source behavior matches `/home/runner/work/CR8W_home_v3/CR8W_home_v3/src/app/components/LandingSignup.tsx@e23902a:L23-L39`.
 3. [ ] Recreate waitlist submit API contract: `POST /signups` with server validation + case-insensitive dedupe-as-success.  
        Source: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/api/server.ts:L412-L437`.
-4. [ ] Preserve waitlist storage semantics (or define explicit replacement): current storage is KV list under `cr8w_signups` in Supabase table `kv_store_8dcd9693`.  
+4. [ ] Preserve waitlist storage semantics (or define explicit replacement): current storage is KV list under `cr8w_signups` in the Supabase KV backing table referenced by `TABLE`.  
        Source: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/api/server.ts:L40`, `L416`.
 5. [ ] Port `PublicContent` routes and content-loading path (`content/*.mdx` + `src/lib/content.ts` audience filtering + Markdown renderer).  
        Sources: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/src/lib/content.ts:L15-L19`, `L84-L93`; `/home/runner/work/CR8W_home_v3/CR8W_home_v3/src/views/PublicContent.tsx:L50-L127`.
