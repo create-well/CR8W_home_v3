@@ -201,9 +201,9 @@ Role gating inside authenticated dashboard:
   - Evidence: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/notion-content-sync.mjs:L21-L27`, `L76-L79`
 - Revenue sync reads `NOTION_DATA_SOURCE_ID`:
   - Evidence: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/notion-to-sheets.mjs:L6-L17`, `L36-L37`
-- IDs found in-repo:
-  - `d029c5b2-5473-8356-bd35-07c8e713e2c1` (`.env.notion-sheets.example:L5`, `scripts/local-sheets-write-smoke.mjs:L6`)
-  - `3c624acf-799d-81bd-9861-d05f3efc5b20` (synced content frontmatter page id: `/home/runner/work/CR8W_home_v3/CR8W_home_v3/content/cr8w-publishing-test.mdx:L9`)
+- IDs found in-repo (described by location to avoid republishing live identifiers):
+  - One concrete `NOTION_DATA_SOURCE_ID` literal appears in `/home/runner/work/CR8W_home_v3/CR8W_home_v3/.env.notion-sheets.example:L5` and `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/local-sheets-write-smoke.mjs:L6`.
+  - One concrete Notion page ID literal (`notionId` frontmatter field) appears in `/home/runner/work/CR8W_home_v3/CR8W_home_v3/content/cr8w-publishing-test.mdx:L9`.
 - Unknown:
   - Active production value(s) of `NOTION_CONTENT_DB` / `NOTION_CONTENT_DATA_SOURCE_ID` used for content publishing (not committed; sourced from GitHub vars/secrets in workflow env).
 
@@ -277,7 +277,7 @@ Role gating inside authenticated dashboard:
   - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/notion-content-sync.mjs`
   - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/notion-to-sheets.mjs`
   - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/validate-notion-records.mjs`
-  - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/local-sheets-write-smoke.mjs` (local smoke utility; includes hard-coded local defaults)
+  - `/home/runner/work/CR8W_home_v3/CR8W_home_v3/scripts/local-sheets-write-smoke.mjs` (local smoke utility; contains hard-coded local defaults that should **not** be ported as literals to CR8WDashVfin; replace with environment-sourced values)
 
 ---
 
