@@ -21,11 +21,12 @@ test('retry recovery resets state and recreates the realtime channel', () => {
   assert.match(view, /onClick=\{onRetryWellNotes\}/);
 });
 
-test('App passes resilience state and retry handler into WellView', () => {
-  assert.match(app, /status: wellNotesStatus, error: wellNotesError, retry: retryWellNotes/);
-  assert.match(app, /wellNotesStatus=\{wellNotesStatus\}/);
-  assert.match(app, /wellNotesError=\{wellNotesError\}/);
-  assert.match(app, /onRetryWellNotes=\{retryWellNotes\}/);
+test('App retains Well Notes resilience hooks alongside the Decisions route', () => {
+  assert.match(app, /useWellNotesRealtime\(\)/);
+  assert.match(app, /wellNotesStatus/);
+  assert.match(app, /wellNotesError/);
+  assert.match(app, /retryWellNotes/);
+  assert.match(app, /<DecisionsView tasks=\{tasks\}/);
 });
 
 test('main dashboard exposes purposeful operational links', async () => {

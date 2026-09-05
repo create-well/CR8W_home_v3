@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
 import * as api from './api';
 import type { SyncData, Task, Station, ForumPost, ForumReply, Message, BrainDump, Announcement, CoFlowDate } from './api';
 
@@ -9,8 +10,10 @@ import { HubView } from './views/HubView';
 import { PodcastView } from './views/PodcastView';
 import { WorkshopsView } from './views/WorkshopsView';
 import { WellView } from './views/WellView';
+import { DecisionsView } from './views/DecisionsView';
 import { CoFlowView } from './views/CoFlowView';
 import { TeamView } from './views/TeamView';
+import { SystemView } from './views/SystemView';
 import { RevenueView } from './views/RevenueView';
 import { ImessageTerminal } from './components/iMessageTerminal';
 import { usePodcastRealtime } from './hooks/usePodcastRealtime';
@@ -22,19 +25,35 @@ import { useRevenueRealtime } from './hooks/useRevenueRealtime';
 import { useTasksRealtime } from './hooks/useTasksRealtime';
 import { useLeadsRealtime } from './hooks/useLeadsRealtime';
 import { useWellNotesRealtime } from './hooks/useWellNotesRealtime';
+import { DashboardProvider } from './context/DashboardContext';
+import { SyncStatusBar } from './components/SyncStatusBar';
+import { DashboardViewIntro } from './components/DashboardViewIntro';
+import { ViewShell } from './components/ViewShell';
+import type { ModuleState } from './types/dashboard';
+import { PublicContentIndex, PublicContentPage } from './views/PublicContent';
 
 type View = 'hub' | 'podcast' | 'workshops' | 'well' | 'coflow' | 'team' | 'revenue';
 type Role = 'core' | 'co-creator' | 'public';
 
 const ALL_VIEWS: { key: View; label: string; icon: string }[] = [
-  { key: 'hub', label: 'Hub', icon: '◎' },
-  { key: 'podcast', label: 'Podcast', icon: '🎙️' },
-  { key: 'workshops', label: 'Workshops', icon: '🌿' },
-  { key: 'well', label: 'The Well', icon: '💧' },
-  { key: 'coflow', label: 'CoFlow', icon: '🌊' },
-  { key: 'team', label: 'Team', icon: '◉' },
-  { key: 'revenue', label: 'Revenue', icon: '✦' },
+  { key: 'hub', label: 'This Week', icon: '◎' },
+  { key: 'podcast', label: 'Moves', icon: '↗' },
+  { key: 'coflow', label: 'Care', icon: '◌' },
+  { key: 'workshops', label: 'FLOWS', icon: '🌿' },
+  { key: 'revenue', label: 'The Source', icon: '✦' },
+  { key: 'well', label: 'Decisions', icon: '◇' },
+  { key: 'team', label: 'System', icon: '◉' },
 ];
+
+const VIEW_PATHS: Record<View, string> = {
+  hub: '/', podcast: '/moves', coflow: '/care', workshops: '/flows',
+  revenue: '/money', well: '/decisions', team: '/system',
+};
+
+const PATH_VIEWS: Record<string, View> = {
+  '/': 'hub', '/moves': 'podcast', '/care': 'coflow', '/flows': 'workshops',
+  '/money': 'revenue', '/decisions': 'well', '/system': 'team',
+};
 
 // Map auth profile key → Supabase username
 const PROFILE_KEY_TO_USERNAME: Record<string, string> = {
@@ -57,14 +76,22 @@ function viewsForRole(role: Role): View[] {
   return ['hub'];
 }
 
-export default function App() {
+function DashboardApp() {
   const [authed, setAuthed] = useState(() => !!localStorage.getItem('cr8w_profile'));
   const [profile, setProfile] = useState<string>(() => localStorage.getItem('cr8w_profile') || '');
   const [role, setRole] = useState<Role>('public');
   const [currentView, setCurrentView] = useState<View>('hub');
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const nextView = PATH_VIEWS[location.pathname] || 'hub';
+    setCurrentView(nextView);
+  }, [location.pathname]);
   const [syncStatus, setSyncStatus] = useState<'ok' | 'error' | 'syncing'>('ok');
   const [syncTime, setSyncTime] = useState('');
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const shellState: ModuleState = !dataLoaded ? 'loading' : syncStatus === 'error' ? 'sync-failed' : 'ready';
 
   // Data states (legacy API — polled)
   const [stations, setStations] = useState<Station[]>([]);
@@ -166,7 +193,9 @@ export default function App() {
       const result = await api.triggerNotionSync();
       if (result.ok) {
         setSyncStatus('ok');
-        setSyncTime('Synced with Notion ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+        const syncedAt = new Date();
+        setSyncTime('Synced with Notion ' + syncedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+        setLastSyncedAt(syncedAt.toISOString());
       } else {
         setSyncStatus('error');
         setSyncTime('Notion sync failed: ' + (result.error || 'Unknown error'));
@@ -227,6 +256,7 @@ export default function App() {
         silentFailCount.current = 0;
         const now = new Date();
         setSyncTime('Synced ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+        setLastSyncedAt(now.toISOString());
         if (!dataLoadedRef.current) { dataLoadedRef.current = true; setDataLoaded(true); }
       } catch (e) {
         silentFailCount.current += 1;
@@ -309,11 +339,12 @@ export default function App() {
   }
 
   return (
-    <div className="cr8w-app">
+    <DashboardProvider>
+      <div className="cr8w-app">
       <TopNav
         views={visibleViews}
         currentView={currentView}
-        onNavigate={(v: string) => setCurrentView(v as View)}
+        onNavigate={(v: string) => navigate(VIEW_PATHS[v as View] || '/')}
         syncStatus={syncStatus}
         syncTime={syncTime}
         profile={profile}
@@ -323,6 +354,29 @@ export default function App() {
         notionSyncNote={notionSyncNote}
       />
 
+      <SyncStatusBar
+        state={syncStatus === 'error' ? 'failed' : syncStatus === 'syncing' ? 'syncing' : 'fresh'}
+        lastSyncedAt={lastSyncedAt}
+      />
+
+      <Routes>
+        <Route path="/" element={<span />} />
+        <Route path="/moves" element={<span />} />
+        <Route path="/care" element={<span />} />
+        <Route path="/flows" element={<span />} />
+        <Route path="/money" element={<span />} />
+        <Route path="/decisions" element={<span />} />
+        <Route path="/system" element={<span />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      <ViewShell
+        title={ALL_VIEWS.find(v => v.key === currentView)?.label || 'This Week'}
+        state={shellState}
+        restrictedMessage="This view is not available for your current role or consent settings."
+      >
+
+      <DashboardViewIntro view={currentView} />
       {!dataLoaded && (
         <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', marginBottom: 8 }}>Loading the well...</div>
@@ -339,7 +393,7 @@ export default function App() {
           announcements={announcements}
           brainDumps={brainDumps}
           calendarEvents={calendarEvents}
-          onNavigate={(v: string) => setCurrentView(v as View)}
+          onNavigate={(v: string) => navigate(VIEW_PATHS[v as View] || '/')}
         />
       )}
 
@@ -378,22 +432,7 @@ export default function App() {
         />
       )}
 
-      {currentView === 'well' && (
-        <WellView
-          forum={forum}
-          forumReplies={forumReplies}
-          wellNotes={wellNotes}
-          wellNotesStatus={wellNotesStatus}
-          wellNotesError={wellNotesError}
-          onRetryWellNotes={retryWellNotes}
-          brainDumps={brainDumps}
-          onAddForumPost={addForumPost}
-          onAddForumReply={addForumReply}
-          onAddWellNote={addWellNote}
-          onLandWellNote={landWellNote}
-          onAddBrainDump={addBrainDump}
-        />
-      )}
+      {currentView === 'well' && <DecisionsView tasks={tasks} />}
 
       {dataLoaded && currentView === 'coflow' && (
         <CoFlowView
@@ -407,13 +446,7 @@ export default function App() {
       )}
 
       {dataLoaded && currentView === 'team' && (
-        <TeamView
-          collaborators={collaborators}
-          tasks={tasks}
-          stations={stations}
-          onAddCollaborator={addCollaborator}
-          onUpdateCollaborator={updateCollaborator}
-        />
+        <SystemView collaborators={collaborators} tasks={tasks} stations={stations} />
       )}
 
       {dataLoaded && currentView === 'revenue' && (
@@ -425,6 +458,8 @@ export default function App() {
           onDeleteOp={deleteRevenueOp}
         />
       )}
+
+      </ViewShell>
 
       {/* iMessage Terminal */}
       {showTerminal && (
@@ -444,6 +479,22 @@ export default function App() {
         className={`scroll-top ${showScrollTop ? 'visible' : ''}`}
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >↑</button>
-    </div>
+      </div>
+    </DashboardProvider>
+  );
+}
+
+function PublicContentRoute() {
+  const { slug } = useParams<{ slug: string }>();
+  return <PublicContentPage slug={slug || ''} />;
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/content" element={<PublicContentIndex />} />
+      <Route path="/content/:slug" element={<PublicContentRoute />} />
+      <Route path="*" element={<DashboardApp />} />
+    </Routes>
   );
 }
