@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function AuthGate() {
   return (
     <div data-testid="auth-gate" style={{

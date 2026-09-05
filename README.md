@@ -65,6 +65,10 @@ Profiles: monny, sunshine, bingle, omar (core), pia (co-creator)
 
 Role-based views are legacy behavior. Dashboard access is currently fail-closed until server-issued sessions are implemented.
 
+## Figma-to-code workflow
+
+See [`docs/FIGMA_MCP.md`](docs/FIGMA_MCP.md) for supported-editor setup and the recommended workflow for turning Figma designs into reviewed GitHub changes.
+
 ## Running locally
 
 ```bash

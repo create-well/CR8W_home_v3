@@ -1,0 +1,79 @@
+name: Notion content to website
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Query and render without changing generated content
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: '37 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-content-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      # Use NOTION_CONTENT_DB for the Perplexity Space database contract, or
+      # NOTION_CONTENT_DATA_SOURCE_ID for Notion's newer data-source API.
+      NOTION_CONTENT_DB: ${{ vars.NOTION_CONTENT_DB }}
+      NOTION_CONTENT_DATA_SOURCE_ID: ${{ vars.NOTION_CONTENT_DATA_SOURCE_ID }}
+      # Leave unset by default so the worker selects 2022-06-28 for
+      # NOTION_CONTENT_DB and 2025-09-03 for NOTION_CONTENT_DATA_SOURCE_ID.
+      NOTION_VERSION: ${{ vars.NOTION_VERSION }}
+      NOTION_PUBLISHED_STATUSES: ${{ vars.NOTION_PUBLISHED_STATUSES || 'Published' }}
+      NOTION_STATUS_PROPERTY: ${{ vars.NOTION_STATUS_PROPERTY || 'Status' }}
+      NOTION_TITLE_PROPERTY: ${{ vars.NOTION_TITLE_PROPERTY }}
+      NOTION_SLUG_PROPERTY: ${{ vars.NOTION_SLUG_PROPERTY }}
+      NOTION_TYPE_PROPERTY: ${{ vars.NOTION_TYPE_PROPERTY }}
+      NOTION_AUDIENCE_PROPERTY: ${{ vars.NOTION_AUDIENCE_PROPERTY }}
+      NOTION_DESCRIPTION_PROPERTY: ${{ vars.NOTION_DESCRIPTION_PROPERTY }}
+      NOTION_PUBLISH_DATE_PROPERTY: ${{ vars.NOTION_PUBLISH_DATE_PROPERTY }}
+      CONTENT_DIR: content
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Render published Notion pages
+        run: node scripts/notion-content-sync.mjs
+
+      - name: Commit generated content
+        if: github.event_name == 'schedule' || inputs.dry_run == false
+        run: |
+          git add --all -- content
+          if git diff --cached --quiet -- content; then
+            echo "No published content changes."
+            exit 0
+          fi
+          git config user.name "createwell-content-sync[bot]"
+          git config user.email "createwell-content-sync[bot]@users.noreply.github.com"
+          git commit -m "chore(content): sync published Notion pages"
+          git push
+
+      - name: Publish sync summary
+        if: always()
+        run: |
+          {
+            echo "## Notion content sync"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Workflow status: ${{ job.status }}"
+            echo "- Commit: ${{ github.sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"

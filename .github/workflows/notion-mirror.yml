@@ -1,0 +1,36 @@
+name: Notion mirror sync
+
+on:
+  schedule:
+    # Every 30 minutes. Cheap, well inside Notion rate limits, and matches
+    # the "manual mirror over real-time sync" decision in the Backend Hub.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Read Notion but skip all writes'
+        type: boolean
+        default: false
+
+concurrency:
+  group: notion-mirror
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sync Notion to Supabase
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: node scripts/notion-to-supabase.mjs
