@@ -20,9 +20,11 @@ export function AuthGate({ onAuthenticated }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const teamPassphrase = import.meta.env.VITE_TEAM_PASSPHRASE;
     if (!email.trim()) { setError('Enter your email'); return; }
     if (!pass) { setError('Enter your password'); return; }
-    if (pass !== 'monnytinks') { setError('Wrong password'); return; }
+    if (!teamPassphrase?.trim()) { setError('Configuration error: VITE_TEAM_PASSPHRASE is not set'); return; }
+    if (pass !== teamPassphrase) { setError('Wrong password'); return; }
     const profile = profileFromEmail(email);
     localStorage.setItem('cr8w_profile', profile);
     onAuthenticated(profile);

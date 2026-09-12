@@ -10,7 +10,7 @@
 
 | Resource | URL | Notes |
 |----------|-----|-------|
-| **Live Dashboard** | https://cr8w.com | Password: `monnytinks` |
+| **Live Dashboard** | https://cr8w.com | Protected by `VITE_TEAM_PASSPHRASE` (set in Vercel env vars) |
 | **GitHub Repo** | https://github.com/create-well/CR8W_home_v3 | Main branch auto-deploys |
 | **Vercel Project** | https://vercel.com/create-well/cr8whomev2 | Deploy logs + env vars |
 | **Supabase Project** | https://supabase.com/dashboard/project/axntibrdivccycxdwlzk | DB, Auth, Realtime |
