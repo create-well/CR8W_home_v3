@@ -16,6 +16,9 @@ concurrency:
   group: notion-mirror
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     runs-on: ubuntu-latest

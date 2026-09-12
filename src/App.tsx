@@ -77,8 +77,8 @@ function viewsForRole(role: Role): View[] {
 }
 
 function DashboardApp() {
-  const [authed, setAuthed] = useState(() => !!localStorage.getItem('cr8w_profile'));
-  const [profile, setProfile] = useState<string>(() => localStorage.getItem('cr8w_profile') || '');
+  const [authed, setAuthed] = useState(false);
+  const [profile, setProfile] = useState<string>('');
   const [role, setRole] = useState<Role>('public');
   const [currentView, setCurrentView] = useState<View>('hub');
   const location = useLocation();
@@ -335,7 +335,7 @@ function DashboardApp() {
   const visibleViews = ALL_VIEWS.filter(v => allowedViews.includes(v.key));
 
   if (!authed) {
-    return <AuthGate onAuthenticated={(p) => { setAuthed(true); setProfile(p); }} />;
+    return <AuthGate />;
   }
 
   return (
