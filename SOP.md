@@ -10,7 +10,7 @@
 
 | Resource | URL | Notes |
 |----------|-----|-------|
-| **Live Dashboard** | https://cr8w.com | Password: `monnytinks` |
+| **Live Dashboard** | https://cr8w.com | Access disabled pending server-issued session auth |
 | **GitHub Repo** | https://github.com/create-well/CR8W_home_v3 | Main branch auto-deploys |
 | **Vercel Project** | https://vercel.com/create-well/cr8whomev2 | Deploy logs + env vars |
 | **Supabase Project** | https://supabase.com/dashboard/project/axntibrdivccycxdwlzk | DB, Auth, Realtime |
@@ -268,7 +268,7 @@ npx vercel --prod
 |-------|-----|-----|
 | Code / deploy | Omar | GitHub / iMessage |
 | Design / brand | Monny | iMessage |
-| Access / passwords | Monny | iMessage |
+| Access coordination | Monny | iMessage |
 | Supabase admin | Omar | Supabase dashboard |
 | Vercel billing | Monny | Vercel dashboard |
 
@@ -289,3 +289,6 @@ npx vercel --prod
 ---
 
 *This doc lives in `~/Desktop/createwell/CR8W_home_v3/SOP.md` and should be updated as the system evolves.*
+
+## Security Note
+The previously exposed Notion credential must be revoked and rotated outside GitHub immediately. Repository history cleanup for prior exposure is a separate owner action and is not performed in this PR.

@@ -18,7 +18,7 @@
 | **Google Drive** | https://drive.google.com/drive/folders/1d9OyYZusS0yyYsfwtjLkz1ss0KYPzl5a | monica.istorya@gmail.com |
 
 **Important tokens (DO NOT share outside core team):**
-- Notion integration token: `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`
+- Notion integration token: `NOTION_TOKEN`
 - Supabase project ref: `axntibrdivccycxdwlzk`
 - Vercel project ID: `prj_KMc00vxHpX0v9rbP87p031ruwZIK`
 
@@ -300,3 +300,6 @@ The dashboard is a **flow tool**, not a surveillance tool. Build banks for the r
 
 *And in the repo at:*
 https://github.com/create-well/CR8W_home_v3/blob/main/CR8W_Developer_SOP.md
+
+## Security Note
+The previously exposed Notion credential must be revoked and rotated outside GitHub immediately. Repository history cleanup for prior exposure is a separate owner action and is not performed in this PR.
